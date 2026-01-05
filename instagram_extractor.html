@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instagram用户名提取器</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: auto; background: #f9f9f9; }
+        textarea { width: 100%; height: 300px; font-size: 16px; box-sizing: border-box; }
+        button { padding: 12px 24px; font-size: 16px; margin: 10px 5px 0 0; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:active { background: #0056b3; }
+        #output { margin-top: 20px; padding: 15px; background: white; border: 1px solid #ddd; border-radius: 5px; font-size: 18px; white-space: pre-wrap; word-break: break-all; min-height: 100px; }
+    </style>
+</head>
+<body>
+    <h1>Instagram用户名提取器</h1>
+    <p>粘贴链接列表（支持&lt;&gt;、https、www、带粉丝文字、多行），点提取 → 输出逗号分隔用户名。<br>保持原顺序，手机电脑通用。</p>
+    
+    <textarea id="input" placeholder="粘贴这里...&#10;例：&lt;https://www.instagram.com/maryhvp19&gt;&#10;&lt;https://instagram.com/fabern_cioccolato&gt; 粉丝:14"></textarea><br>
+    <button onclick="extract()">提取用户名</button>
+    <button onclick="copyResult()">复制结果</button>
+    
+    <div id="output">结果显示在这里</div>
+
+    <script>
+        function extract() {
+            let input = document.getElementById('input').value.trim();
+            if (!input) {
+                document.getElementById('output').innerText = '请输入内容';
+                return;
+            }
+            
+            let regex = /(?:https?:\/\/)?(?:www\.)?instagram\.com\/([a-zA-Z0-9._]+)/gi;
+            let matches = input.matchAll(regex);
+            let usernames = [];
+            for (let match of matches) {
+                usernames.push(match[1]);
+            }
+            
+            if (usernames.length === 0) {
+                document.getElementById('output').innerText = '未找到Instagram用户名\n请检查是否包含 instagram.com/用户名 格式';
+                return;
+            }
+            
+            let result = usernames.join(',');
+            document.getElementById('output').innerText = result;
+        }
+        
+        function copyResult() {
+            let text = document.getElementById('output').innerText.trim();
+            if (!text || text === '请输入内容' || text.includes('未找到')) {
+                alert('无有效结果可复制');
+                return;
+            }
+            
+            // iOS兼容复制
+            let temp = document.createElement('textarea');
+            temp.value = text;
+            temp.style.position = 'fixed';
+            temp.style.opacity = '0';
+            document.body.appendChild(temp);
+            temp.select();
+            
+            try {
+                document.execCommand('copy');
+                alert('已复制到剪贴板！');
+            } catch (err) {
+                alert('复制失败，请长按结果手动复制');
+            }
+            
+            document.body.removeChild(temp);
+        }
+    </script>
+</body>
+</html>
