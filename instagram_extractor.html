@@ -9,7 +9,7 @@
         textarea { width: 100%; height: 300px; font-size: 16px; box-sizing: border-box; }
         button { padding: 12px 24px; font-size: 16px; margin: 10px 5px 0 0; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
         button:active { background: #0056b3; }
-        #output { margin-top: 20px; padding: 15px; background: white; border: 1px solid #ddd; border-radius: 5px; font-size: 18px; white-space: pre-wrap; word-break: break-all; min-height: 100px; }
+        #output, #output2 { margin-top: 20px; padding: 15px; background: white; border: 1px solid #ddd; border-radius: 5px; font-size: 18px; white-space: pre-wrap; word-break: break-all; min-height: 100px; }
     </style>
 </head>
 <body>
@@ -21,6 +21,14 @@
     <button onclick="copyResult()">复制结果</button>
     
     <div id="output">结果显示在这里</div>
+
+    <!-- 新功能：格式转换 -->
+    <h2>格式转换器</h2>
+    <p>粘贴原始数据（ID----用户名----密码...格式）</p>
+    <textarea id="input2" placeholder="粘贴原始格式数据...&#10;例：&#10;36920 jenesis6697----G9l872eE----xoyt.10103570169@gosoftme.com----xoyt.10103570169----2762YOKL2C6CHU4W6NBHR4N6FRKU5VEI----[JSON数据]----英国"></textarea><br>
+    <button onclick="convertFormat()">转换格式</button>
+    <button onclick="copyResult2()">复制转换结果</button>
+    <div id="output2">转换结果显示在这里</div>
 
     <script>
         function extract() {
@@ -54,6 +62,109 @@
             }
             
             // iOS兼容复制
+            let temp = document.createElement('textarea');
+            temp.value = text;
+            temp.style.position = 'fixed';
+            temp.style.opacity = '0';
+            document.body.appendChild(temp);
+            temp.select();
+            
+            try {
+                document.execCommand('copy');
+                alert('已复制到剪贴板！');
+            } catch (err) {
+                alert('复制失败，请长按结果手动复制');
+            }
+            
+            document.body.removeChild(temp);
+        }
+        
+        function convertFormat() {
+            let input = document.getElementById('input2').value.trim();
+            if (!input) {
+                document.getElementById('output2').innerText = '请输入内容';
+                return;
+            }
+            
+            let lines = input.split('\n');
+            let results = [];
+            
+            lines.forEach(line => {
+                if (line.trim() === '') return;
+                
+                // 处理每行数据
+                // 格式：ID 用户名----密码----邮箱----用户ID----2FA----JSON----国家
+                // 注意：ID和用户名之间可能有空格
+                
+                // 首先，分割ID和用户名部分
+                let firstPartEnd = line.indexOf('----');
+                if (firstPartEnd === -1) return;
+                
+                let firstPart = line.substring(0, firstPartEnd);
+                let rest = line.substring(firstPartEnd + 4); // 跳过'----'
+                
+                // 从firstPart中提取用户名（去掉前面的ID和空格）
+                let username = '';
+                let lastSpaceIndex = firstPart.lastIndexOf(' ');
+                if (lastSpaceIndex !== -1) {
+                    username = firstPart.substring(lastSpaceIndex + 1);
+                } else {
+                    username = firstPart;
+                }
+                
+                // 分割剩余部分
+                let restParts = rest.split('----');
+                
+                // 现在我们有：
+                // username: 用户名
+                // restParts[0]: 密码
+                // restParts[1]: 邮箱
+                // restParts[2]: 用户ID
+                // restParts[3]: 2FA
+                // restParts[4]: JSON（可能包含'----'）
+                // restParts[5]: 国家（如果存在）
+                
+                // 处理JSON部分可能包含'----'的情况
+                let password = restParts[0] || '';
+                let email = restParts[1] || '';
+                let userId = restParts[2] || '';
+                let twofa = restParts[3] || '';
+                let country = '';
+                
+                // 如果restParts有6个或更多元素，最后一个是国家
+                if (restParts.length >= 6) {
+                    country = restParts[restParts.length - 1];
+                }
+                
+                // 构建新格式
+                let newFormat = [
+                    username,        // 用户名
+                    password,        // 密码
+                    twofa,           // 2FA
+                    email,           // 邮箱
+                    userId,          // 用户ID
+                    country,         // 国家
+                    'https://2fa.plus/' // 固定URL
+                ].join('----');
+                
+                results.push(newFormat);
+            });
+            
+            if (results.length === 0) {
+                document.getElementById('output2').innerText = '格式不正确或没有有效数据';
+                return;
+            }
+            
+            document.getElementById('output2').innerText = results.join('\n');
+        }
+
+        function copyResult2() {
+            let text = document.getElementById('output2').innerText.trim();
+            if (!text || text === '请输入内容' || text.includes('格式不正确')) {
+                alert('无有效结果可复制');
+                return;
+            }
+            
             let temp = document.createElement('textarea');
             temp.value = text;
             temp.style.position = 'fixed';
