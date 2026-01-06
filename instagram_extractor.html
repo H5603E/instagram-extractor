@@ -25,7 +25,7 @@
     <!-- 功能1：格式转换器 -->
     <h2>格式转换器</h2>
     <p>粘贴原始数据（ID----用户名----密码...格式）</p>
-    <textarea id="input2" placeholder="粘贴原始格式数据...&#10;例：&#10;36920 jenesis6697----G9l872eE----xoyt.10103570169@gosoftme.com----xoyt.10103570169----2762YOKL2C6CHU4W6NBHR4N6FRKU5VEI----[JSON数据]----英国"></textarea><br>
+    <textarea id="input2" placeholder="粘贴原始格式数据...&#10;例：&#10;37354 wusiufan----N31DG65i----xlje.3680188988@gosoftme.com----xlje.3680188988----OVVZOH7RJDAS7JO2ZJAOJW735T4XWB4X----[JSON数据]----香港"></textarea><br>
     <button onclick="convertFormat()">转换格式</button>
     <button onclick="copyResult2()">复制转换结果</button>
     <div id="output2">转换结果显示在这里</div>
@@ -132,15 +132,16 @@
                     country = restParts[restParts.length - 1];
                 }
                 
-                // 构建新格式
+                // 构建新格式（新增一个----https://mail.gosoftme.com/）
                 let newFormat = [
-                    username,        // 用户名
-                    password,        // 密码
-                    twofa,           // 2FA
-                    email,           // 邮箱
-                    userId,          // 用户ID
-                    country,         // 国家
-                    'https://2fa.plus/' // 固定URL
+                    username,                      // 用户名
+                    password,                      // 密码
+                    twofa,                         // 2FA
+                    email,                         // 邮箱
+                    userId,                        // 用户ID
+                    country,                       // 国家
+                    'https://mail.gosoftme.com/',  // 新增的固定URL
+                    'https://2fa.plus/'            // 固定URL
                 ].join('----');
                 
                 results.push(newFormat);
