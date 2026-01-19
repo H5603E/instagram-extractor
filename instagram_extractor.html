@@ -525,9 +525,20 @@
         function convertExcelFormat(input) {
             let results = [];
             
-            // 检测格式：如果第一行包含Tab，使用Tab分隔格式（电脑）；否则使用换行分隔格式（手机）
-            let firstLine = input.split('\n')[0];
-            let isTabFormat = firstLine.includes('\t');
+            // 检测格式：
+            // 1. 如果第一行包含Tab且列数很多（>5列），说明是电脑格式（单行一条记录）
+            // 2. 如果包含Tab但列数较少，或者按序号分割，说明是手机格式（多行一条记录）
+            let firstLine = input.split('\n')[0].trim();
+            let hasTab = firstLine.includes('\t');
+            let isTabFormat = false;
+            
+            if (hasTab) {
+                let columns = firstLine.split('\t').filter(c => c.trim());
+                // 如果第一行列数很多（>5列），说明是电脑格式
+                if (columns.length > 5) {
+                    isTabFormat = true;
+                }
+            }
             
             if (isTabFormat) {
                 // 电脑格式：Tab分隔的单行数据
@@ -620,7 +631,24 @@
                 }
                 
                 records.forEach(record => {
-                    let lines = record.split('\n').map(l => l.trim()).filter(l => l);
+                    // 处理每行，如果包含Tab则取第一列（去除Tab分隔）
+                    let rawLines = record.split('\n');
+                    let lines = [];
+                    
+                    rawLines.forEach(rawLine => {
+                        let trimmed = rawLine.trim();
+                        if (trimmed) {
+                            // 如果包含Tab，取第一列；否则取整行
+                            if (trimmed.includes('\t')) {
+                                let firstCol = trimmed.split('\t')[0].trim();
+                                if (firstCol) {
+                                    lines.push(firstCol);
+                                }
+                            } else {
+                                lines.push(trimmed);
+                            }
+                        }
+                    });
                     
                     if (lines.length < 3) return;
                     
