@@ -5,22 +5,312 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Instagram用户名提取器</title>
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: auto; background: #f9f9f9; }
-        textarea { width: 100%; height: 300px; font-size: 16px; box-sizing: border-box; }
-        button { padding: 12px 24px; font-size: 16px; margin: 10px 5px 0 0; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
-        button:active { background: #0056b3; }
-        #output, #output2, #output3 { margin-top: 20px; padding: 15px; background: white; border: 1px solid #ddd; border-radius: 5px; font-size: 18px; white-space: pre-wrap; word-break: break-all; min-height: 100px; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            padding: 40px 20px;
+            max-width: 900px;
+            margin: auto;
+            background: #ffffff;
+            min-height: 100vh;
+            position: relative;
+        }
+        
+        .container {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .ad-left, .ad-right {
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 200px;
+            height: 400px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: 700;
+            color: #4facfe;
+            z-index: 10;
+            animation: fadeIn 0.8s ease-out;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .ad-left {
+            left: 20px;
+        }
+        
+        .ad-right {
+            right: 20px;
+        }
+        
+        .ad-left:hover, .ad-right:hover {
+            transform: translateY(-50%) scale(1.05);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+        }
+        
+        @media (max-width: 1400px) {
+            .ad-left, .ad-right {
+                display: none;
+            }
+        }
+        
+        h1 {
+            color: #333;
+            font-size: 2.5em;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-align: center;
+            animation: fadeInDown 0.6s ease-out;
+        }
+        
+        h2 {
+            color: #333;
+            font-size: 1.8em;
+            font-weight: 600;
+            margin: 40px 0 15px 0;
+            text-align: center;
+            animation: fadeInDown 0.6s ease-out 0.1s both;
+        }
+        
+        p {
+            color: #666;
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            text-align: center;
+            animation: fadeIn 0.6s ease-out 0.2s both;
+        }
+        
+        .review-label {
+            color: #ffd700;
+            font-weight: 700;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 300px;
+            font-size: 16px;
+            padding: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            color: #333;
+            font-family: inherit;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            resize: vertical;
+            animation: fadeInUp 0.6s ease-out 0.3s both;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 1);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+        }
+        
+        textarea::placeholder {
+            color: #999;
+        }
+        
+        button {
+            padding: 14px 32px;
+            font-size: 16px;
+            font-weight: 600;
+            margin: 15px 10px 0 0;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
+            position: relative;
+            overflow: hidden;
+            animation: fadeInUpButton 0.6s ease-out 0.4s forwards;
+            transform: scale(1);
+        }
+        
+        button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        
+        button:hover {
+            transform: scale(1.05) !important;
+            box-shadow: 0 12px 40px rgba(79, 172, 254, 0.5);
+        }
+        
+        button:active {
+            transform: scale(0.98);
+            box-shadow: 0 2px 10px rgba(79, 172, 254, 0.3);
+        }
+        
+        button:active::before {
+            width: 300px;
+            height: 300px;
+        }
+        
+        .output-wrapper {
+            margin-top: 25px;
+            animation: fadeInUp 0.6s ease-out 0.5s both;
+        }
+        
+        #output, #output2, #output3 {
+            padding: 25px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            font-size: 16px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            min-height: 100px;
+            color: #333;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: slideIn 0.5s ease-out;
+        }
+        
+        #output:empty, #output2:empty, #output3:empty {
+            color: #999;
+        }
+        
+        .stats {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #666;
+            padding: 10px 0;
+            animation: fadeIn 0.5s ease-out 0.6s both;
+        }
+        
+        .stats-title {
+            display: inline;
+            font-weight: 600;
+        }
+        
+        .duplicate-item {
+            color: #ff6b6b;
+            display: inline;
+            margin-left: 10px;
+            font-weight: 600;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes fadeInUpButton {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(1);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding: 20px 15px;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+            
+            h2 {
+                font-size: 1.5em;
+            }
+            
+            button {
+                width: 100%;
+                margin: 10px 0 0 0;
+            }
+        }
     </style>
 </head>
 <body>
+    <!-- 左侧广告位 -->
+    <div class="ad-left">广告位招租</div>
+    
+    <!-- 右侧广告位 -->
+    <div class="ad-right">广告位招租</div>
+    
+    <div class="container">
     <h1>Instagram用户名提取器</h1>
-    <p>粘贴链接列表（支持&lt;&gt;、https、www、带粉丝文字、多行），点提取 → 输出逗号分隔用户名。<br>保持原顺序，手机电脑通用。</p>
+    <p><span class="review-label">最近评价：</span>我艹，这个网站巨他妈好用。</p>
     
     <textarea id="input" placeholder="粘贴这里...&#10;例：&lt;https://www.instagram.com/maryhvp19&gt;&#10;&lt;https://instagram.com/fabern_cioccolato&gt; 粉丝:14"></textarea><br>
     <button onclick="extract()">提取用户名</button>
     <button onclick="copyResult()">复制结果</button>
     
-    <div id="output">结果显示在这里</div>
+    <div class="output-wrapper">
+        <div id="output">结果显示在这里</div>
+        <div id="stats1" class="stats"></div>
+    </div>
 
     <!-- 功能1：格式转换器 -->
     <h2>格式转换器</h2>
@@ -28,7 +318,10 @@
     <textarea id="input2" placeholder="粘贴原始格式数据...&#10;例：&#10;37354 wusiufan----N31DG65i----xlje.3680188988@gosoftme.com----xlje.3680188988----OVVZOH7RJDAS7JO2ZJAOJW735T4XWB4X----[JSON数据]----香港"></textarea><br>
     <button onclick="convertFormat()">转换格式</button>
     <button onclick="copyResult2()">复制转换结果</button>
-    <div id="output2">转换结果显示在这里</div>
+    <div class="output-wrapper">
+        <div id="output2">转换结果显示在这里</div>
+        <div id="stats2" class="stats"></div>
+    </div>
 
     <!-- 功能2：Tab转分隔符转换器 -->
     <h2>Tab转分隔符转换器</h2>
@@ -36,14 +329,30 @@
     <textarea id="input3" placeholder="粘贴Tab分隔的数据...&#10;例：&#10;peterober666	VT0b8AjWXBfv	Q3HL D5YD Q3Z6 ZHZL O5UL 3CML 4WO3 7VYO	petrob85@gmx.com	q4J8ox42Ng	https://gmx.com/	https://2fa.plus/	us"></textarea><br>
     <button onclick="convertTabToSeparator()">Tab转----</button>
     <button onclick="copyResult3()">复制结果</button>
-    <div id="output3">转换结果显示在这里</div>
+    <div class="output-wrapper">
+        <div id="output3">转换结果显示在这里</div>
+    </div>
+    </div>
 
     <script>
+        // 添加输出框更新动画的辅助函数
+        function animateOutput(elementId) {
+            const element = document.getElementById(elementId);
+            element.style.opacity = '0';
+            element.style.transform = 'translateY(10px)';
+            setTimeout(() => {
+                element.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+                element.style.opacity = '1';
+                element.style.transform = 'translateY(0)';
+            }, 10);
+        }
+        
         // 功能1：提取Instagram用户名
         function extract() {
             let input = document.getElementById('input').value.trim();
             if (!input) {
                 document.getElementById('output').innerText = '请输入内容';
+                document.getElementById('stats1').innerHTML = '';
                 return;
             }
             
@@ -56,17 +365,44 @@
             
             if (usernames.length === 0) {
                 document.getElementById('output').innerText = '未找到Instagram用户名\n请检查是否包含 instagram.com/用户名 格式';
+                document.getElementById('stats1').innerHTML = '';
                 return;
             }
             
+            // 统计重复
+            let countMap = {};
+            usernames.forEach(username => {
+                countMap[username] = (countMap[username] || 0) + 1;
+            });
+            
+            let duplicates = [];
+            for (let username in countMap) {
+                if (countMap[username] > 1) {
+                    duplicates.push({username: username, count: countMap[username]});
+                }
+            }
+            
+            // 显示结果
             let result = usernames.join(',');
             document.getElementById('output').innerText = result;
+            animateOutput('output');
+            
+            // 显示统计信息
+            let statsHtml = '<span class="stats-title">数量: ' + usernames.length + '</span>';
+            if (duplicates.length > 0) {
+                statsHtml += '<span>，重复:';
+                duplicates.forEach((dup, index) => {
+                    if (index > 0) statsHtml += '，';
+                    statsHtml += '<span class="duplicate-item">' + dup.username + ': ' + dup.count + '次</span>';
+                });
+                statsHtml += '</span>';
+            }
+            document.getElementById('stats1').innerHTML = statsHtml;
         }
         
         function copyResult() {
             let text = document.getElementById('output').innerText.trim();
             if (!text || text === '请输入内容' || text.includes('未找到')) {
-                alert('无有效结果可复制');
                 return;
             }
             
@@ -79,9 +415,8 @@
             
             try {
                 document.execCommand('copy');
-                alert('已复制到剪贴板！');
             } catch (err) {
-                alert('复制失败，请长按结果手动复制');
+                // 静默失败
             }
             
             document.body.removeChild(temp);
@@ -92,6 +427,7 @@
             let input = document.getElementById('input2').value.trim();
             if (!input) {
                 document.getElementById('output2').innerText = '请输入内容';
+                document.getElementById('stats2').innerHTML = '';
                 return;
             }
             
@@ -124,7 +460,7 @@
                 let password = restParts[0] || '';
                 let email = restParts[1] || '';
                 let userId = restParts[2] || '';
-                let twofa = restParts[3] || '';
+                let twofa = restParts[3] || '';  // 2FA在第4个位置（索引3）
                 let country = '';
                 
                 // 如果restParts有6个或更多元素，最后一个是国家
@@ -132,7 +468,7 @@
                     country = restParts[restParts.length - 1];
                 }
                 
-                // 构建新格式（新增一个----https://mail.gosoftme.com/）
+                // 构建新格式（顺序：用户名、密码、2FA、邮箱、用户ID、国家、URL1、URL2）
                 let newFormat = [
                     username,                      // 用户名
                     password,                      // 密码
@@ -149,16 +485,24 @@
             
             if (results.length === 0) {
                 document.getElementById('output2').innerText = '格式不正确或没有有效数据';
+                document.getElementById('stats2').innerHTML = '';
                 return;
             }
             
-            document.getElementById('output2').innerText = results.join('\n');
+            // 每行之间空一行（两个换行符），最后空一行并显示数量
+            let outputText = results.join('\n\n') + '\n\n数量：' + results.length + '个';
+            document.getElementById('output2').innerText = outputText;
+            animateOutput('output2');
+            
+            // 显示统计信息（格式与stats1一致）
+            let statsHtml = '<span class="stats-title">数量: ' + results.length + '个</span>';
+            // 格式转换器一般不会有重复，但保持格式一致
+            document.getElementById('stats2').innerHTML = statsHtml;
         }
 
         function copyResult2() {
             let text = document.getElementById('output2').innerText.trim();
             if (!text || text === '请输入内容' || text.includes('格式不正确')) {
-                alert('无有效结果可复制');
                 return;
             }
             
@@ -171,9 +515,8 @@
             
             try {
                 document.execCommand('copy');
-                alert('已复制到剪贴板！');
             } catch (err) {
-                alert('复制失败，请长按结果手动复制');
+                // 静默失败
             }
             
             document.body.removeChild(temp);
@@ -198,12 +541,12 @@
             });
             
             document.getElementById('output3').innerText = results.join('\n');
+            animateOutput('output3');
         }
 
         function copyResult3() {
             let text = document.getElementById('output3').innerText.trim();
             if (!text || text === '请输入内容') {
-                alert('无有效结果可复制');
                 return;
             }
             
@@ -216,9 +559,8 @@
             
             try {
                 document.execCommand('copy');
-                alert('已复制到剪贴板！');
             } catch (err) {
-                alert('复制失败，请长按结果手动复制');
+                // 静默失败
             }
             
             document.body.removeChild(temp);
