@@ -314,8 +314,8 @@
 
     <!-- 功能1：格式转换器 -->
     <h2>格式转换器</h2>
-    <p>粘贴原始数据（ID----用户名----密码...格式）</p>
-    <textarea id="input2" placeholder="粘贴原始格式数据...&#10;例：&#10;37354 wusiufan----N31DG65i----xlje.3680188988@gosoftme.com----xlje.3680188988----OVVZOH7RJDAS7JO2ZJAOJW735T4XWB4X----[JSON数据]----香港"></textarea><br>
+    <p>支持两种格式：1. ID----用户名----密码...格式 或 2. Excel复制粘贴的多行格式（自动识别）</p>
+    <textarea id="input2" placeholder="粘贴数据（支持两种格式，自动识别）...&#10;格式1：37354 wusiufan----N31DG65i----xlje.3680188988@gosoftme.com----xlje.3680188988----OVVZOH7RJDAS7JO2ZJAOJW735T4XWB4X----[JSON数据]----香港&#10;格式2：从Excel复制粘贴的多行数据"></textarea><br>
     <button onclick="convertFormat()">转换格式</button>
     <button onclick="copyResult2()">复制转换结果</button>
     <div class="output-wrapper">
@@ -375,6 +375,16 @@
                 countMap[username] = (countMap[username] || 0) + 1;
             });
             
+            // 去重，保持第一次出现的顺序
+            let uniqueUsernames = [];
+            let seen = new Set();
+            for (let username of usernames) {
+                if (!seen.has(username)) {
+                    seen.add(username);
+                    uniqueUsernames.push(username);
+                }
+            }
+            
             let duplicates = [];
             for (let username in countMap) {
                 if (countMap[username] > 1) {
@@ -382,13 +392,13 @@
                 }
             }
             
-            // 显示结果
-            let result = usernames.join(',');
+            // 显示结果（去重后的）
+            let result = uniqueUsernames.join(',');
             document.getElementById('output').innerText = result;
             animateOutput('output');
             
-            // 显示统计信息
-            let statsHtml = '<span class="stats-title">数量: ' + usernames.length + '</span>';
+            // 显示统计信息（显示去重后的数量）
+            let statsHtml = '<span class="stats-title">数量: ' + uniqueUsernames.length + '</span>';
             if (duplicates.length > 0) {
                 statsHtml += '<span>，重复:';
                 duplicates.forEach((dup, index) => {
@@ -431,6 +441,18 @@
                 return;
             }
             
+            // 检测格式类型：如果包含----分隔符，使用旧格式；否则使用新格式（Excel复制粘贴）
+            let isOldFormat = input.includes('----');
+            
+            if (isOldFormat) {
+                convertOldFormat(input);
+            } else {
+                convertExcelFormat(input);
+            }
+        }
+        
+        // 旧格式转换（原有的----分隔格式）
+        function convertOldFormat(input) {
             let lines = input.split('\n');
             let results = [];
             
@@ -496,7 +518,114 @@
             
             // 显示统计信息（格式与stats1一致）
             let statsHtml = '<span class="stats-title">数量: ' + results.length + '个</span>';
-            // 格式转换器一般不会有重复，但保持格式一致
+            document.getElementById('stats2').innerHTML = statsHtml;
+        }
+        
+        // 新格式转换（Excel复制粘贴的Tab分隔格式）
+        function convertExcelFormat(input) {
+            // 按行分割，每行是一条记录（Tab分隔）
+            let lines = input.split('\n').filter(l => l.trim());
+            let results = [];
+            
+            lines.forEach(line => {
+                // 按Tab分割列
+                let columns = line.split('\t').map(c => c.trim());
+                
+                if (columns.length < 3) return; // 至少需要几列数据
+                
+                // 根据列索引提取字段
+                // 列0: 序号（忽略）
+                // 列1: 用户名
+                // 列2: 密码
+                // 列3: 2FA
+                // 列4-6: 数字（忽略）
+                // 列7: 空（忽略）
+                // 列8: 邮箱
+                // 列9: 用户ID
+                // 列10: JSON数据（忽略）
+                // 列11: 空（忽略）
+                // 列12: 国家
+                
+                let username = columns[1] || '';
+                let password = columns[2] || '';
+                let twofa = columns[3] || '';
+                let email = '';
+                let userId = '';
+                let country = '';
+                
+                // 查找邮箱（包含@符号的列）
+                for (let i = 4; i < columns.length; i++) {
+                    if (columns[i] && columns[i].includes('@')) {
+                        email = columns[i];
+                        // 用户ID通常在邮箱的下一列
+                        if (i + 1 < columns.length && columns[i + 1] && !columns[i + 1].includes('@') && !columns[i + 1].includes('[')) {
+                            userId = columns[i + 1];
+                        }
+                        break;
+                    }
+                }
+                
+                // 如果没找到邮箱，尝试从列8开始查找
+                if (!email && columns.length > 8) {
+                    email = columns[8] || '';
+                    userId = columns[9] || '';
+                }
+                
+                // 查找用户ID（如果还没找到，查找包含ins的列）
+                if (!userId) {
+                    for (let i = 0; i < columns.length; i++) {
+                        if (columns[i] && columns[i].includes('ins') && !columns[i].includes('@') && !columns[i].includes('[')) {
+                            userId = columns[i];
+                            break;
+                        }
+                    }
+                }
+                
+                // 查找国家（从后往前找，找到第一个不包含特殊字符的列）
+                for (let i = columns.length - 1; i >= 0; i--) {
+                    let col = columns[i];
+                    if (col && 
+                        !col.includes('[') && 
+                        !col.includes('{') && 
+                        !col.includes('@') && 
+                        !col.includes('ins') &&
+                        !col.match(/^\d+$/) && // 不是纯数字
+                        col.length < 20 && // 国家名通常较短
+                        col.length > 0) {
+                        country = col;
+                        break;
+                    }
+                }
+                
+                // 构建输出格式（顺序：用户名、密码、2FA、邮箱、用户ID、URL1、URL2）
+                let newFormat = [
+                    username,
+                    password,
+                    twofa,
+                    email,
+                    userId,
+                    'https://mail.hebmails.com/',
+                    'https://2fa.plus/'
+                ].join('----');
+                
+                if (username) { // 至少要有用户名才添加
+                    results.push(newFormat);
+                }
+            });
+            
+            if (results.length === 0) {
+                document.getElementById('output2').innerText = '格式不正确或没有有效数据';
+                document.getElementById('stats2').innerHTML = '';
+                return;
+            }
+            
+            // 每行之间空一行（两个换行符），最后空一行并显示数量
+            let outputText = results.join('\n\n') + '\n\n数量：' + results.length + '个';
+            document.getElementById('output2').innerText = outputText;
+            animateOutput('output2');
+            
+            // 显示统计信息
+            let statsHtml = '<span class="stats-title">数量: ' + results.length + '个</span>';
             document.getElementById('stats2').innerHTML = statsHtml;
         }
 
