@@ -521,97 +521,170 @@
             document.getElementById('stats2').innerHTML = statsHtml;
         }
         
-        // 新格式转换（Excel复制粘贴的Tab分隔格式）
+        // 新格式转换（Excel复制粘贴格式，支持Tab分隔和换行分隔）
         function convertExcelFormat(input) {
-            // 按行分割，每行是一条记录（Tab分隔）
-            let lines = input.split('\n').filter(l => l.trim());
             let results = [];
             
-            lines.forEach(line => {
-                // 按Tab分割列
-                let columns = line.split('\t').map(c => c.trim());
+            // 检测格式：如果第一行包含Tab，使用Tab分隔格式（电脑）；否则使用换行分隔格式（手机）
+            let firstLine = input.split('\n')[0];
+            let isTabFormat = firstLine.includes('\t');
+            
+            if (isTabFormat) {
+                // 电脑格式：Tab分隔的单行数据
+                let lines = input.split('\n').filter(l => l.trim());
                 
-                if (columns.length < 3) return; // 至少需要几列数据
-                
-                // 根据列索引提取字段
-                // 列0: 序号（忽略）
-                // 列1: 用户名
-                // 列2: 密码
-                // 列3: 2FA
-                // 列4-6: 数字（忽略）
-                // 列7: 空（忽略）
-                // 列8: 邮箱
-                // 列9: 用户ID
-                // 列10: JSON数据（忽略）
-                // 列11: 空（忽略）
-                // 列12: 国家
-                
-                let username = columns[1] || '';
-                let password = columns[2] || '';
-                let twofa = columns[3] || '';
-                let email = '';
-                let userId = '';
-                let country = '';
-                
-                // 查找邮箱（包含@符号的列）
-                for (let i = 4; i < columns.length; i++) {
-                    if (columns[i] && columns[i].includes('@')) {
-                        email = columns[i];
-                        // 用户ID通常在邮箱的下一列
-                        if (i + 1 < columns.length && columns[i + 1] && !columns[i + 1].includes('@') && !columns[i + 1].includes('[')) {
-                            userId = columns[i + 1];
-                        }
-                        break;
-                    }
-                }
-                
-                // 如果没找到邮箱，尝试从列8开始查找
-                if (!email && columns.length > 8) {
-                    email = columns[8] || '';
-                    userId = columns[9] || '';
-                }
-                
-                // 查找用户ID（如果还没找到，查找包含ins的列）
-                if (!userId) {
-                    for (let i = 0; i < columns.length; i++) {
-                        if (columns[i] && columns[i].includes('ins') && !columns[i].includes('@') && !columns[i].includes('[')) {
-                            userId = columns[i];
+                lines.forEach(line => {
+                    // 按Tab分割列
+                    let columns = line.split('\t').map(c => c.trim());
+                    
+                    if (columns.length < 3) return;
+                    
+                    let username = columns[1] || '';
+                    let password = columns[2] || '';
+                    let twofa = columns[3] || '';
+                    let email = '';
+                    let userId = '';
+                    
+                    // 查找邮箱（包含@符号的列）
+                    for (let i = 4; i < columns.length; i++) {
+                        if (columns[i] && columns[i].includes('@')) {
+                            email = columns[i];
+                            // 用户ID通常在邮箱的下一列
+                            if (i + 1 < columns.length && columns[i + 1] && !columns[i + 1].includes('@') && !columns[i + 1].includes('[')) {
+                                userId = columns[i + 1];
+                            }
                             break;
                         }
                     }
-                }
-                
-                // 查找国家（从后往前找，找到第一个不包含特殊字符的列）
-                for (let i = columns.length - 1; i >= 0; i--) {
-                    let col = columns[i];
-                    if (col && 
-                        !col.includes('[') && 
-                        !col.includes('{') && 
-                        !col.includes('@') && 
-                        !col.includes('ins') &&
-                        !col.match(/^\d+$/) && // 不是纯数字
-                        col.length < 20 && // 国家名通常较短
-                        col.length > 0) {
-                        country = col;
-                        break;
+                    
+                    // 如果没找到邮箱，尝试从列8开始查找
+                    if (!email && columns.length > 8) {
+                        email = columns[8] || '';
+                        userId = columns[9] || '';
                     }
+                    
+                    // 查找用户ID（如果还没找到，查找包含ins的列）
+                    if (!userId) {
+                        for (let i = 0; i < columns.length; i++) {
+                            if (columns[i] && columns[i].includes('ins') && !columns[i].includes('@') && !columns[i].includes('[')) {
+                                userId = columns[i];
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // 构建输出格式
+                    let newFormat = [
+                        username,
+                        password,
+                        twofa,
+                        email,
+                        userId,
+                        'https://mail.hebmails.com/',
+                        'https://2fa.plus/'
+                    ].join('----');
+                    
+                    if (username) {
+                        results.push(newFormat);
+                    }
+                });
+            } else {
+                // 手机格式：换行分隔的多行数据，按序号（数字开头）分割记录
+                // 先按空行尝试分割，如果分割后只有1个记录，则按序号分割
+                let records = input.split(/\n\s*\n/).filter(r => r.trim());
+                
+                // 如果按空行分割只有1个记录，说明记录之间没有空行，需要按序号分割
+                if (records.length === 1) {
+                    // 按序号（数字开头）分割记录
+                    let allLines = input.split('\n');
+                    records = [];
+                    let currentRecord = [];
+                    
+                    for (let i = 0; i < allLines.length; i++) {
+                        let line = allLines[i].trim();
+                        // 如果当前行是序号（纯数字或数字+空格），且当前记录不为空，则开始新记录
+                        if (line.match(/^\d+\s*$/) && currentRecord.length > 0) {
+                            records.push(currentRecord.join('\n'));
+                            currentRecord = [allLines[i]];
+                        } else {
+                            currentRecord.push(allLines[i]);
+                        }
+                    }
+                    // 添加最后一个记录
+                    if (currentRecord.length > 0) {
+                        records.push(currentRecord.join('\n'));
+                    }
+                    
+                    // 过滤掉空记录
+                    records = records.filter(r => r.trim());
                 }
                 
-                // 构建输出格式（顺序：用户名、密码、2FA、邮箱、用户ID、URL1、URL2）
-                let newFormat = [
-                    username,
-                    password,
-                    twofa,
-                    email,
-                    userId,
-                    'https://mail.hebmails.com/',
-                    'https://2fa.plus/'
-                ].join('----');
-                
-                if (username) { // 至少要有用户名才添加
-                    results.push(newFormat);
-                }
-            });
+                records.forEach(record => {
+                    let lines = record.split('\n').map(l => l.trim()).filter(l => l);
+                    
+                    if (lines.length < 3) return;
+                    
+                    // 提取字段（按行号）
+                    // 第0行：序号（忽略）
+                    // 第1行：用户名
+                    // 第2行：密码
+                    // 第3行：2FA
+                    // 第4行：数字（33 23 0，忽略）
+                    // 第5行：邮箱
+                    // 第6行：用户ID
+                    // 第7行：JSON数据（忽略）
+                    // 第8行：国家（忽略）
+                    
+                    let username = lines[1] || '';
+                    let password = lines[2] || '';
+                    let twofa = lines[3] || '';
+                    let email = '';
+                    let userId = '';
+                    
+                    // 查找邮箱（包含@符号的行）
+                    for (let i = 0; i < lines.length; i++) {
+                        if (lines[i] && lines[i].includes('@')) {
+                            email = lines[i];
+                            // 用户ID通常在邮箱的下一行
+                            if (i + 1 < lines.length && lines[i + 1] && !lines[i + 1].includes('@') && !lines[i + 1].includes('[')) {
+                                userId = lines[i + 1];
+                            }
+                            break;
+                        }
+                    }
+                    
+                    // 如果没找到邮箱，尝试从第5行开始查找
+                    if (!email && lines.length > 5) {
+                        email = lines[5] || '';
+                        userId = lines[6] || '';
+                    }
+                    
+                    // 查找用户ID（如果还没找到，查找包含ins的行）
+                    if (!userId) {
+                        for (let i = 0; i < lines.length; i++) {
+                            if (lines[i] && lines[i].includes('ins') && !lines[i].includes('@') && !lines[i].includes('[')) {
+                                userId = lines[i];
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // 构建输出格式
+                    let newFormat = [
+                        username,
+                        password,
+                        twofa,
+                        email,
+                        userId,
+                        'https://mail.hebmails.com/',
+                        'https://2fa.plus/'
+                    ].join('----');
+                    
+                    if (username) {
+                        results.push(newFormat);
+                    }
+                });
+            }
             
             if (results.length === 0) {
                 document.getElementById('output2').innerText = '格式不正确或没有有效数据';
