@@ -308,7 +308,7 @@
     <button onclick="copyResult()">复制结果</button>
     
     <div class="output-wrapper">
-        <div id="output">结果显示在这里</div>
+    <div id="output">结果显示在这里</div>
         <div id="stats1" class="stats"></div>
     </div>
 
@@ -319,7 +319,7 @@
     <button onclick="convertFormat()">转换格式</button>
     <button onclick="copyResult2()">复制转换结果</button>
     <div class="output-wrapper">
-        <div id="output2">转换结果显示在这里</div>
+    <div id="output2">转换结果显示在这里</div>
         <div id="stats2" class="stats"></div>
     </div>
 
@@ -330,7 +330,7 @@
     <button onclick="convertTabToSeparator()">Tab转----</button>
     <button onclick="copyResult3()">复制结果</button>
     <div class="output-wrapper">
-        <div id="output3">转换结果显示在这里</div>
+    <div id="output3">转换结果显示在这里</div>
     </div>
     </div>
 
@@ -606,19 +606,32 @@
                 
                 // 如果按空行分割只有1个记录，说明记录之间没有空行，需要按序号分割
                 if (records.length === 1) {
-                    // 按序号（数字开头）分割记录
+                    // 按序号（数字+Tab+非数字内容）分割记录
                     let allLines = input.split('\n');
                     records = [];
                     let currentRecord = [];
                     
                     for (let i = 0; i < allLines.length; i++) {
-                        let line = allLines[i].trim();
-                        // 如果当前行是序号（纯数字或数字+空格），且当前记录不为空，则开始新记录
-                        if (line.match(/^\d+\s*$/) && currentRecord.length > 0) {
+                        let line = allLines[i];
+                        let trimmed = line.trim();
+                        
+                        // 判断是否是序号行：数字+Tab，后面跟非数字内容（如用户名）
+                        // 排除数字行（如：0	0	0	）
+                        let isSequenceLine = false;
+                        if (trimmed.match(/^\d+\t/)) {
+                            let parts = trimmed.split('\t').filter(p => p.trim());
+                            // 如果第二部分不是纯数字，说明是序号行（如：1	用户名）
+                            if (parts.length > 1 && !parts[1].match(/^\d+$/)) {
+                                isSequenceLine = true;
+                            }
+                        }
+                        
+                        // 如果是序号行，且当前记录不为空，则开始新记录
+                        if (isSequenceLine && currentRecord.length > 0) {
                             records.push(currentRecord.join('\n'));
-                            currentRecord = [allLines[i]];
+                            currentRecord = [line];
                         } else {
-                            currentRecord.push(allLines[i]);
+                            currentRecord.push(line);
                         }
                     }
                     // 添加最后一个记录
@@ -631,66 +644,77 @@
                 }
                 
                 records.forEach(record => {
-                    // 处理每行，如果包含Tab则取第一列（去除Tab分隔）
                     let rawLines = record.split('\n');
                     let lines = [];
-                    
-                    rawLines.forEach(rawLine => {
-                        let trimmed = rawLine.trim();
-                        if (trimmed) {
-                            // 如果包含Tab，取第一列；否则取整行
-                            if (trimmed.includes('\t')) {
-                                let firstCol = trimmed.split('\t')[0].trim();
-                                if (firstCol) {
-                                    lines.push(firstCol);
-                                }
-                            } else {
-                                lines.push(trimmed);
-                            }
-                        }
-                    });
-                    
-                    if (lines.length < 3) return;
-                    
-                    // 提取字段（按行号）
-                    // 第0行：序号（忽略）
-                    // 第1行：用户名
-                    // 第2行：密码
-                    // 第3行：2FA
-                    // 第4行：数字（33 23 0，忽略）
-                    // 第5行：邮箱
-                    // 第6行：用户ID
-                    // 第7行：JSON数据（忽略）
-                    // 第8行：国家（忽略）
-                    
-                    let username = lines[1] || '';
-                    let password = lines[2] || '';
-                    let twofa = lines[3] || '';
+                    let username = '';
+                    let password = '';
+                    let twofa = '';
                     let email = '';
                     let userId = '';
+                    
+                    // 处理第一行：包含序号、用户名、密码（Tab分隔）
+                    if (rawLines.length > 0) {
+                        let firstLine = rawLines[0].trim();
+                        if (firstLine.includes('\t')) {
+                            let cols = firstLine.split('\t').map(c => c.trim()).filter(c => c);
+                            // 第0列：序号（忽略）
+                            // 第1列：用户名
+                            // 第2列：密码
+                            if (cols.length > 1) username = cols[1] || '';
+                            if (cols.length > 2) password = cols[2] || '';
+                        }
+                    }
+                    
+                    // 处理后续行，直接从原始行中提取
+                    for (let i = 1; i < rawLines.length; i++) {
+                        let line = rawLines[i].trim();
+                        if (!line) continue;
+                        
+                        // 跳过数字行（如：0	0	0	）
+                        if (line.match(/^\d+\t\d+\t\d+/)) {
+                            continue;
+                        }
+                        
+                        // 如果包含Tab，只取第一列（去除Tab分隔的多列）
+                        if (line.includes('\t')) {
+                            let firstCol = line.split('\t')[0].trim();
+                            if (firstCol && !firstCol.match(/^\d+$/)) { // 忽略纯数字
+                                lines.push(firstCol);
+                            }
+                        } else {
+                            lines.push(line);
+                        }
+                    }
+                    
+                    // 提取2FA（通常是第一个非空行，且不包含@和[，长度较长）
+                    for (let i = 0; i < lines.length; i++) {
+                        if (lines[i] && 
+                            !lines[i].includes('@') && 
+                            !lines[i].includes('[') && 
+                            !lines[i].includes('{') &&
+                            !lines[i].includes('ins') &&
+                            lines[i].length > 10) { // 2FA通常较长
+                            twofa = lines[i];
+                            break;
+                        }
+                    }
                     
                     // 查找邮箱（包含@符号的行）
                     for (let i = 0; i < lines.length; i++) {
                         if (lines[i] && lines[i].includes('@')) {
                             email = lines[i];
                             // 用户ID通常在邮箱的下一行
-                            if (i + 1 < lines.length && lines[i + 1] && !lines[i + 1].includes('@') && !lines[i + 1].includes('[')) {
+                            if (i + 1 < lines.length && lines[i + 1] && !lines[i + 1].includes('@') && !lines[i + 1].includes('[') && !lines[i + 1].includes('{')) {
                                 userId = lines[i + 1];
                             }
                             break;
                         }
                     }
                     
-                    // 如果没找到邮箱，尝试从第5行开始查找
-                    if (!email && lines.length > 5) {
-                        email = lines[5] || '';
-                        userId = lines[6] || '';
-                    }
-                    
-                    // 查找用户ID（如果还没找到，查找包含ins的行）
+                    // 查找用户ID（如果还没找到，查找包含ins但不包含@的行）
                     if (!userId) {
                         for (let i = 0; i < lines.length; i++) {
-                            if (lines[i] && lines[i].includes('ins') && !lines[i].includes('@') && !lines[i].includes('[')) {
+                            if (lines[i] && lines[i].includes('ins') && !lines[i].includes('@') && !lines[i].includes('[') && !lines[i].includes('{')) {
                                 userId = lines[i];
                                 break;
                             }
