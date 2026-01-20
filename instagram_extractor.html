@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Instagram用户名提取器</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -207,6 +208,35 @@
             animation: fadeIn 0.5s ease-out 0.6s both;
         }
         
+        #dropZone {
+            margin-bottom: 15px;
+            padding: 30px;
+            border: 2px dashed rgba(79, 172, 254, 0.3);
+            border-radius: 20px;
+            background: rgba(79, 172, 254, 0.05);
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: fadeInUp 0.6s ease-out 0.35s both;
+        }
+        
+        #dropZone:hover {
+            border-color: rgba(79, 172, 254, 0.5);
+            background: rgba(79, 172, 254, 0.08);
+        }
+        
+        #dropZone .drop-text {
+            color: #4facfe;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        #dropZone .drop-hint {
+            color: #999;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        
         .stats-title {
             display: inline;
             font-weight: 600;
@@ -303,7 +333,7 @@
     <h1>Instagram用户名提取器</h1>
     <p><span class="review-label">最近评价：</span>我艹，这个网站巨他妈好用。</p>
     
-    <textarea id="input" placeholder="粘贴这里...&#10;例：&lt;https://www.instagram.com/maryhvp19&gt;&#10;&lt;https://instagram.com/fabern_cioccolato&gt; 粉丝:14"></textarea><br>
+    <textarea id="input" placeholder="支持两种格式：&#10;1. 链接格式：&lt;https://www.instagram.com/maryhvp19&gt;&#10;2. 模板格式：台灣自選C：&#10;   dailylife_recording&#10;   chime_bento"></textarea><br>
     <button onclick="extract()">提取用户名</button>
     <button onclick="copyResult()">复制结果</button>
     
@@ -315,6 +345,13 @@
     <!-- 功能1：格式转换器 -->
     <h2>格式转换器</h2>
     <p>支持两种格式：1. ID----用户名----密码...格式 或 2. Excel复制粘贴的多行格式（自动识别）</p>
+    
+    <!-- 文件拖拽区域 -->
+    <div id="dropZone">
+        <div class="drop-text">📁 拖拽 TXT 或 Excel 文件到这里导入</div>
+        <div class="drop-hint">支持 .txt 和 .xlsx 文件</div>
+    </div>
+    
     <textarea id="input2" placeholder="粘贴数据（支持两种格式，自动识别）...&#10;格式1：37354 wusiufan----N31DG65i----xlje.3680188988@gosoftme.com----xlje.3680188988----OVVZOH7RJDAS7JO2ZJAOJW735T4XWB4X----[JSON数据]----香港&#10;格式2：从Excel复制粘贴的多行数据"></textarea><br>
     <button onclick="convertFormat()">转换格式</button>
     <button onclick="copyResult2()">复制转换结果</button>
@@ -356,15 +393,63 @@
                 return;
             }
             
-            let regex = /(?:https?:\/\/)?(?:www\.)?instagram\.com\/([a-zA-Z0-9._]+)/gi;
-            let matches = input.matchAll(regex);
             let usernames = [];
-            for (let match of matches) {
-                usernames.push(match[1]);
+            
+            // 检测是否包含 instagram.com 链接
+            let hasInstagramLink = /instagram\.com/i.test(input);
+            
+            if (hasInstagramLink) {
+                // 链接格式：使用原有逻辑
+                let regex = /(?:https?:\/\/)?(?:www\.)?instagram\.com\/([a-zA-Z0-9._]+)/gi;
+                let matches = input.matchAll(regex);
+                for (let match of matches) {
+                    usernames.push(match[1]);
+                }
+            } else {
+                // 模板格式：提取所有用户名（跳过包含中文的行）
+                let lines = input.split('\n');
+                lines.forEach(line => {
+                    let trimmed = line.trim();
+                    // 跳过空行
+                    if (!trimmed) return;
+                    
+                    // 检测是否包含中文字符
+                    let hasChinese = /[\u4e00-\u9fa5]/.test(trimmed);
+                    
+                    if (hasChinese) {
+                        // 如果包含中文，检查是否有冒号（：或:），如果有则提取冒号后面的用户名
+                        let colonIndex = trimmed.search(/[：:]/);
+                        if (colonIndex !== -1) {
+                            // 提取冒号后面的部分
+                            let afterColon = trimmed.substring(colonIndex + 1).trim();
+                            // 如果冒号后面有内容，尝试提取用户名
+                            if (afterColon) {
+                                // 可能冒号后面有多个用户名（用空格分隔），提取第一个
+                                let firstPart = afterColon.split(/\s+/)[0].trim();
+                                if (firstPart && firstPart.match(/^[a-zA-Z0-9._]+$/)) {
+                                    usernames.push(firstPart);
+                                }
+                            }
+                        }
+                        // 包含中文的行跳过（除非上面已经提取了用户名）
+                        return;
+                    }
+                    
+                    // 不包含中文的行，提取用户名
+                    // 可能一行有多个用户名（用空格分隔）
+                    let parts = trimmed.split(/\s+/);
+                    parts.forEach(part => {
+                        let username = part.trim();
+                        // 验证用户名格式（只包含字母、数字、点、下划线）
+                        if (username && username.match(/^[a-zA-Z0-9._]+$/)) {
+                            usernames.push(username);
+                        }
+                    });
+                });
             }
             
             if (usernames.length === 0) {
-                document.getElementById('output').innerText = '未找到Instagram用户名\n请检查是否包含 instagram.com/用户名 格式';
+                document.getElementById('output').innerText = '未找到Instagram用户名\n请检查是否包含 instagram.com/用户名 格式或模板格式';
                 document.getElementById('stats1').innerHTML = '';
                 return;
             }
@@ -819,6 +904,123 @@
             
             document.body.removeChild(temp);
         }
+        
+        // 文件拖拽功能
+        (function() {
+            const dropZone = document.getElementById('dropZone');
+            const input2 = document.getElementById('input2');
+            
+            // 拖拽区域样式
+            function setDropZoneStyle(isDragging) {
+                if (isDragging) {
+                    dropZone.style.borderColor = 'rgba(79, 172, 254, 0.6)';
+                    dropZone.style.background = 'rgba(79, 172, 254, 0.1)';
+                    dropZone.style.transform = 'scale(1.02)';
+                } else {
+                    dropZone.style.borderColor = 'rgba(79, 172, 254, 0.3)';
+                    dropZone.style.background = 'rgba(79, 172, 254, 0.05)';
+                    dropZone.style.transform = 'scale(1)';
+                }
+            }
+            
+            // 阻止默认行为
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+                document.body.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            // 拖拽进入
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => setDropZoneStyle(true), false);
+            });
+            
+            // 拖拽离开
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => setDropZoneStyle(false), false);
+            });
+            
+            // 文件拖放
+            dropZone.addEventListener('drop', handleDrop, false);
+            
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                
+                if (files.length > 0) {
+                    handleFile(files[0]);
+                }
+            }
+            
+            // 处理文件
+            function handleFile(file) {
+                const fileName = file.name.toLowerCase();
+                const fileExtension = fileName.split('.').pop();
+                
+                if (fileExtension === 'txt') {
+                    // 读取TXT文件
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        try {
+                            const content = e.target.result;
+                            // 清空原有内容，替换为新内容
+                            input2.value = content;
+                            // 自动触发转换
+                            convertFormat();
+                        } catch (err) {
+                            alert('文件读取失败');
+                        }
+                    };
+                    reader.onerror = function() {
+                        alert('文件读取失败');
+                    };
+                    reader.readAsText(file, 'UTF-8');
+                } else if (fileExtension === 'xlsx' || fileExtension === 'xls') {
+                    // 读取Excel文件
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        try {
+                            const data = new Uint8Array(e.target.result);
+                            const workbook = XLSX.read(data, {type: 'array'});
+                            
+                            // 读取第一个工作表
+                            const firstSheetName = workbook.SheetNames[0];
+                            const worksheet = workbook.Sheets[firstSheetName];
+                            
+                            // 转换为JSON，然后转换为Tab分隔的文本格式
+                            const jsonData = XLSX.utils.sheet_to_json(worksheet, {header: 1, defval: ''});
+                            
+                            // 转换为Tab分隔的文本（模拟Excel复制粘贴的格式）
+                            // 跳过第一行（表头）
+                            let textContent = '';
+                            for (let i = 1; i < jsonData.length; i++) {
+                                const row = jsonData[i];
+                                if (row && row.length > 0) {
+                                    textContent += row.join('\t') + '\n';
+                                }
+                            }
+                            
+                            // 清空原有内容，替换为新内容
+                            input2.value = textContent.trim();
+                            // 自动触发转换
+                            convertFormat();
+                        } catch (err) {
+                            alert('文件格式错误');
+                        }
+                    };
+                    reader.onerror = function() {
+                        alert('文件读取失败');
+                    };
+                    reader.readAsArrayBuffer(file);
+                } else {
+                    alert('文件格式错误');
+                }
+            }
+        })();
     </script>
 </body>
 </html>
