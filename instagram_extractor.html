@@ -879,7 +879,14 @@
                 results.push(converted);
             });
             
-            document.getElementById('output3').innerText = results.join('\n');
+            if (results.length === 0) {
+                document.getElementById('output3').innerText = '格式不正确或没有有效数据';
+                return;
+            }
+            
+            // 每行之间空一行（两个换行符），最后空一行并显示数量
+            let outputText = results.join('\n\n') + '\n\n数量：' + results.length + '个';
+            document.getElementById('output3').innerText = outputText;
             animateOutput('output3');
         }
 
