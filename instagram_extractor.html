@@ -369,6 +369,13 @@
     <div class="output-wrapper">
     <div id="output3">转换结果显示在这里</div>
     </div>
+
+    <!-- 功能3：批量打开链接 -->
+    <h2>批量打开链接</h2>
+    <p>每行一个URL，点击按钮批量打开（新标签页）</p>
+    <textarea id="input4" placeholder="粘贴URL列表（每行一个）...&#10;例：&#10;https://www.instagram.com/user1&#10;https://www.instagram.com/user2&#10;https://www.instagram.com/user3"></textarea><br>
+    <button onclick="openLinks()">批量打开链接</button>
+    <div id="progress4" class="stats" style="margin-top: 10px;"></div>
     </div>
 
     <script>
@@ -629,44 +636,78 @@
                 // 电脑格式：Tab分隔的单行数据
                 let lines = input.split('\n').filter(l => l.trim());
                 
+                // 检测新格式：列数>=11，且最后一列是URL（包含http://或https://）
+                let isNewFormat = false;
+                if (lines.length > 0) {
+                    let firstDataLine = lines[0];
+                    let testColumns = firstDataLine.split('\t');
+                    if (testColumns.length >= 11) {
+                        let lastCol = testColumns[testColumns.length - 1].trim();
+                        if (lastCol.match(/^https?:\/\//)) {
+                            isNewFormat = true;
+                        }
+                    }
+                }
+                
                 lines.forEach(line => {
                     // 按Tab分割列
                     let columns = line.split('\t').map(c => c.trim());
                     
                     if (columns.length < 3) return;
                     
-                    let username = columns[1] || '';
-                    let password = columns[2] || '';
-                    let twofa = columns[3] || '';
+                    let username = '';
+                    let password = '';
+                    let twofa = '';
                     let email = '';
                     let userId = '';
+                    let country = '';
+                    let emailUrl = '';
                     
-                    // 查找邮箱（包含@符号的列）
-                    for (let i = 4; i < columns.length; i++) {
-                        if (columns[i] && columns[i].includes('@')) {
-                            email = columns[i];
-                            // 用户ID通常在邮箱的下一列
-                            if (i + 1 < columns.length && columns[i + 1] && !columns[i + 1].includes('@') && !columns[i + 1].includes('[')) {
-                                userId = columns[i + 1];
-                            }
-                            break;
-                        }
-                    }
-                    
-                    // 如果没找到邮箱，尝试从列8开始查找
-                    if (!email && columns.length > 8) {
-                        email = columns[8] || '';
-                        userId = columns[9] || '';
-                    }
-                    
-                    // 查找用户ID（如果还没找到，查找包含ins的列）
-                    if (!userId) {
-                        for (let i = 0; i < columns.length; i++) {
-                            if (columns[i] && columns[i].includes('ins') && !columns[i].includes('@') && !columns[i].includes('[')) {
-                                userId = columns[i];
+                    if (isNewFormat && columns.length >= 11) {
+                        // 新格式：列1=用户名, 列2=密码, 列3=2FA, 列7=邮箱, 列8=用户ID, 列11=国家, 列12=邮箱URL
+                        username = columns[0] || '';
+                        password = columns[1] || '';
+                        twofa = columns[2] || '';
+                        email = columns[6] || '';
+                        userId = columns[7] || '';
+                        country = columns[10] || '';
+                        emailUrl = columns[11] || '';
+                    } else {
+                        // 旧格式：列1=序号, 列2=用户名, 列3=密码, 列4=2FA, 列8=邮箱, 列9=用户ID
+                        username = columns[1] || '';
+                        password = columns[2] || '';
+                        twofa = columns[3] || '';
+                        
+                        // 查找邮箱（包含@符号的列）
+                        for (let i = 4; i < columns.length; i++) {
+                            if (columns[i] && columns[i].includes('@')) {
+                                email = columns[i];
+                                // 用户ID通常在邮箱的下一列
+                                if (i + 1 < columns.length && columns[i + 1] && !columns[i + 1].includes('@') && !columns[i + 1].includes('[')) {
+                                    userId = columns[i + 1];
+                                }
                                 break;
                             }
                         }
+                        
+                        // 如果没找到邮箱，尝试从列8开始查找
+                        if (!email && columns.length > 8) {
+                            email = columns[8] || '';
+                            userId = columns[9] || '';
+                        }
+                        
+                        // 查找用户ID（如果还没找到，查找包含ins的列）
+                        if (!userId) {
+                            for (let i = 0; i < columns.length; i++) {
+                                if (columns[i] && columns[i].includes('ins') && !columns[i].includes('@') && !columns[i].includes('[')) {
+                                    userId = columns[i];
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        // 默认邮箱URL
+                        emailUrl = 'https://mail.hebmails.com/';
                     }
                     
                     // 构建输出格式
@@ -676,7 +717,8 @@
                         twofa,
                         email,
                         userId,
-                        'https://mail.hebmails.com/',
+                        country,
+                        emailUrl || 'https://mail.hebmails.com/',
                         'https://2fa.plus/'
                     ].join('----');
                     
@@ -910,6 +952,75 @@
             }
             
             document.body.removeChild(temp);
+        }
+        
+        // 功能4：批量打开链接
+        function openLinks() {
+            let input = document.getElementById('input4').value.trim();
+            if (!input) {
+                document.getElementById('progress4').innerHTML = '<span style="color: #999;">请输入URL</span>';
+                return;
+            }
+            
+            // 解析每行URL
+            let lines = input.split('\n');
+            let urls = [];
+            
+            lines.forEach(line => {
+                let trimmed = line.trim();
+                if (!trimmed) return;
+                
+                // 验证并格式化URL
+                let url = trimmed;
+                // 如果没有协议，自动添加https://
+                if (!url.match(/^https?:\/\//i)) {
+                    url = 'https://' + url;
+                }
+                
+                // 验证URL格式
+                try {
+                    new URL(url);
+                    urls.push(url);
+                } catch (e) {
+                    // URL格式无效，跳过
+                }
+            });
+            
+            if (urls.length === 0) {
+                document.getElementById('progress4').innerHTML = '<span style="color: #ff6b6b;">未找到有效的URL</span>';
+                return;
+            }
+            
+            // 显示进度
+            let total = urls.length;
+            let opened = 0;
+            document.getElementById('progress4').innerHTML = '<span class="stats-title">已打开: 0 / ' + total + '</span>';
+            
+            // 逐个打开链接（新标签页）
+            // 使用很小的延迟（10ms）避免浏览器弹窗拦截
+            urls.forEach((url, index) => {
+                setTimeout(() => {
+                    let newWindow = window.open(url, '_blank');
+                    opened++;
+                    // 更新进度
+                    document.getElementById('progress4').innerHTML = '<span class="stats-title">已打开: ' + opened + ' / ' + total + '</span>';
+                    
+                    // 如果被拦截，提示用户
+                    if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+                        // 弹窗被拦截，提示用户
+                        if (opened === 1) {
+                            alert('浏览器阻止了弹窗，请允许此网站的弹窗权限后重试');
+                        }
+                    }
+                    
+                    // 完成后显示
+                    if (opened === total) {
+                        setTimeout(() => {
+                            document.getElementById('progress4').innerHTML = '<span class="stats-title" style="color: #4facfe;">完成！已打开 ' + total + ' 个链接</span>';
+                        }, 200);
+                    }
+                }, index * 10); // 每个链接间隔10ms
+            });
         }
         
         // 文件拖拽功能
