@@ -17,14 +17,44 @@
             padding: 40px 20px;
             max-width: 900px;
             margin: auto;
-            background: #ffffff;
+            background: #f8fafc;
             min-height: 100vh;
             position: relative;
+            color: #333;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 20% 80%, rgba(59, 130, 246, 0.08) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 20%, rgba(16, 185, 129, 0.08) 0%, transparent 50%);
+            z-index: -1;
         }
         
         .container {
             position: relative;
             z-index: 1;
+            background: #ffffff;
+            border-radius: 30px;
+            padding: 40px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            animation: containerSlideIn 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        @keyframes containerSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
         }
         
         .ad-left, .ad-right {
@@ -34,16 +64,16 @@
             width: 200px;
             height: 400px;
             background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border: 2px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 20px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 24px;
             font-weight: 700;
-            color: #4facfe;
+            color: #3b82f6;
             z-index: 10;
             animation: fadeIn 0.8s ease-out;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -69,30 +99,46 @@
         }
         
         h1 {
-            color: #333;
-            font-size: 2.5em;
-            font-weight: 700;
-            margin-bottom: 10px;
+            color: #2d3748;
+            font-size: 2.8em;
+            font-weight: 800;
+            margin-bottom: 15px;
             text-align: center;
             animation: fadeInDown 0.6s ease-out;
+            letter-spacing: -0.5px;
         }
         
         h2 {
-            color: #333;
-            font-size: 1.8em;
-            font-weight: 600;
-            margin: 40px 0 15px 0;
+            color: #434343;
+            font-size: 2em;
+            font-weight: 700;
+            margin: 60px 0 20px 0;
             text-align: center;
             animation: fadeInDown 0.6s ease-out 0.1s both;
+            letter-spacing: -0.3px;
+            position: relative;
+        }
+        
+        h2::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 4px;
+            background: linear-gradient(135deg, #3b82f6 0%, #10b981 100%);
+            border-radius: 2px;
         }
         
         p {
             color: #666;
-            font-size: 15px;
-            line-height: 1.6;
-            margin-bottom: 20px;
+            font-size: 16px;
+            line-height: 1.7;
+            margin-bottom: 25px;
             text-align: center;
             animation: fadeIn 0.6s ease-out 0.2s both;
+            font-weight: 400;
         }
         
         .review-label {
@@ -102,49 +148,50 @@
         
         textarea {
             width: 100%;
-            height: 300px;
+            height: 280px;
             font-size: 16px;
-            padding: 20px;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            border-radius: 20px;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
+            padding: 24px;
+            border: 2px solid rgba(59, 130, 246, 0.2);
+            border-radius: 22px;
+            background: #ffffff;
             color: #333;
             font-family: inherit;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
             resize: vertical;
             animation: fadeInUp 0.6s ease-out 0.3s both;
         }
         
         textarea:focus {
             outline: none;
-            border-color: rgba(255, 255, 255, 0.5);
-            background: rgba(255, 255, 255, 1);
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+            border-color: rgba(59, 130, 246, 0.5);
+            background: #ffffff;
+            box-shadow: 0 8px 24px rgba(59, 130, 246, 0.25);
             transform: translateY(-2px);
         }
         
         textarea::placeholder {
-            color: #999;
+            color: #a0a0a0;
+            font-weight: 300;
         }
         
         button {
-            padding: 14px 32px;
+            padding: 16px 36px;
             font-size: 16px;
             font-weight: 600;
-            margin: 15px 10px 0 0;
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            margin: 20px 12px 0 0;
+            background: linear-gradient(135deg, #3b82f6 0%, #10b981 100%);
             color: white;
             border: none;
-            border-radius: 25px;
+            border-radius: 28px;
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
             position: relative;
             overflow: hidden;
             animation: fadeInUpButton 0.6s ease-out 0.4s forwards;
             transform: scale(1);
+            letter-spacing: 0.3px;
         }
         
         button::before {
@@ -155,65 +202,99 @@
             width: 0;
             height: 0;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.4);
             transform: translate(-50%, -50%);
-            transition: width 0.6s, height 0.6s;
+            transition: width 0.5s, height 0.5s;
         }
         
         button:hover {
             transform: scale(1.05) !important;
-            box-shadow: 0 12px 40px rgba(79, 172, 254, 0.5);
+            box-shadow: 0 12px 30px rgba(59, 130, 246, 0.5);
         }
         
         button:active {
-            transform: scale(0.98);
-            box-shadow: 0 2px 10px rgba(79, 172, 254, 0.3);
+            transform: scale(0.98) !important;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
         }
         
         button:active::before {
-            width: 300px;
-            height: 300px;
+            width: 400px;
+            height: 400px;
+        }
+        
+        button:focus {
+            outline: none;
+        }
+        
+        /* 为不同功能的按钮添加微妙的样式变化 */
+        button:nth-child(2n) {
+            background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
+        }
+        
+        button:nth-child(2n):hover {
+            box-shadow: 0 12px 30px rgba(16, 185, 129, 0.5);
         }
         
         .output-wrapper {
-            margin-top: 25px;
+            margin-top: 30px;
             animation: fadeInUp 0.6s ease-out 0.5s both;
         }
         
         #output, #output2, #output3 {
-            padding: 25px;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            border-radius: 20px;
+            padding: 28px;
+            background: #fafafa;
+            border: 2px solid rgba(102, 126, 234, 0.1);
+            border-radius: 22px;
             font-size: 16px;
             white-space: pre-wrap;
             word-break: break-all;
-            min-height: 100px;
+            min-height: 120px;
             color: #333;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.05);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             animation: slideIn 0.5s ease-out;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        #output:hover, #output2:hover, #output3:hover {
+            border-color: rgba(102, 126, 234, 0.3);
+            background: #ffffff;
+            box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.05), 0 2px 8px rgba(102, 126, 234, 0.1);
+        }
+        
+        /* 增强版slideIn动画 */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px) scale(0.98);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0) scale(1);
+            }
         }
         
         #output:empty, #output2:empty, #output3:empty {
-            color: #999;
+            color: #a0a0a0;
+            font-style: italic;
         }
         
         .stats {
-            margin-top: 15px;
-            font-size: 14px;
+            margin-top: 18px;
+            font-size: 15px;
             color: #666;
-            padding: 10px 0;
+            padding: 12px 0;
             animation: fadeIn 0.5s ease-out 0.6s both;
+            font-weight: 500;
         }
         
         #dropZone {
-            margin-bottom: 15px;
-            padding: 30px;
-            border: 2px dashed rgba(79, 172, 254, 0.3);
-            border-radius: 20px;
-            background: rgba(79, 172, 254, 0.05);
+            margin-bottom: 20px;
+            padding: 40px;
+            border: 3px dashed rgba(59, 130, 246, 0.3);
+            border-radius: 22px;
+            background: rgba(59, 130, 246, 0.05);
             text-align: center;
             cursor: pointer;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -221,20 +302,22 @@
         }
         
         #dropZone:hover {
-            border-color: rgba(79, 172, 254, 0.5);
-            background: rgba(79, 172, 254, 0.08);
+            border-color: rgba(59, 130, 246, 0.6);
+            background: rgba(59, 130, 246, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(59, 130, 246, 0.15);
         }
         
         #dropZone .drop-text {
-            color: #4facfe;
-            font-size: 16px;
-            font-weight: 600;
+            color: #3b82f6;
+            font-size: 18px;
+            font-weight: 700;
         }
         
         #dropZone .drop-hint {
             color: #999;
-            font-size: 12px;
-            margin-top: 5px;
+            font-size: 14px;
+            margin-top: 8px;
         }
         
         .stats-title {
@@ -302,9 +385,74 @@
             }
         }
         
+        /* 按钮组样式 */
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 25px;
+            justify-content: center;
+        }
+        
+        /* 为移动设备优化的基础样式 */
         @media (max-width: 768px) {
             body {
                 padding: 20px 15px;
+            }
+            
+            .container {
+                padding: 30px 25px;
+            }
+            
+            h1 {
+                font-size: 2.2em;
+            }
+            
+            h2 {
+                font-size: 1.7em;
+            }
+            
+            h2::after {
+                width: 60px;
+                height: 3px;
+            }
+            
+            .button-group {
+                flex-direction: column;
+                align-items: stretch;
+                margin-top: 20px;
+            }
+            
+            button {
+                width: 100%;
+                margin: 0;
+                padding: 14px 32px;
+            }
+            
+            textarea {
+                height: 220px;
+                padding: 20px;
+            }
+            
+            #dropZone {
+                padding: 30px 20px;
+            }
+            
+            #output, #output2, #output3 {
+                padding: 20px;
+                min-height: 100px;
+            }
+        }
+        
+        /* 为超小屏幕设备优化 */
+        @media (max-width: 480px) {
+            body {
+                padding: 15px 10px;
+            }
+            
+            .container {
+                padding: 25px 20px;
+                border-radius: 25px;
             }
             
             h1 {
@@ -313,11 +461,37 @@
             
             h2 {
                 font-size: 1.5em;
+                margin: 40px 0 15px 0;
+            }
+            
+            p {
+                font-size: 15px;
+                line-height: 1.6;
+            }
+            
+            textarea {
+                height: 180px;
+                font-size: 15px;
             }
             
             button {
-                width: 100%;
-                margin: 10px 0 0 0;
+                font-size: 15px;
+                padding: 12px 28px;
+            }
+            
+            #dropZone .drop-text {
+                font-size: 16px;
+            }
+            
+            #dropZone .drop-hint {
+                font-size: 13px;
+            }
+        }
+        
+        /* 为平板横屏优化 */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .container {
+                padding: 40px 30px;
             }
         }
     </style>
@@ -333,9 +507,11 @@
     <h1>Instagram用户名提取器</h1>
     <p><span class="review-label">最近评价：</span>我艹，这个网站巨他妈好用。</p>
     
-    <textarea id="input" placeholder="支持两种格式：&#10;1. 链接格式：&lt;https://www.instagram.com/maryhvp19&gt;&#10;2. 模板格式：台灣自選C：&#10;   dailylife_recording&#10;   chime_bento"></textarea><br>
-    <button onclick="extract()">提取用户名</button>
-    <button onclick="copyResult()">复制结果</button>
+    <textarea id="input" placeholder="支持两种格式：&#10;1. 链接格式：&lt;https://www.instagram.com/maryhvp19&gt;&#10;2. 模板格式：台灣自選C：&#10;   dailylife_recording&#10;   chime_bento"></textarea>
+    <div class="button-group">
+        <button onclick="extract()">提取用户名</button>
+        <button onclick="copyResult()">复制结果</button>
+    </div>
     
     <div class="output-wrapper">
     <div id="output">结果显示在这里</div>
@@ -352,9 +528,11 @@
         <div class="drop-hint">支持 .txt 和 .xlsx 文件</div>
     </div>
     
-    <textarea id="input2" placeholder="粘贴数据（支持两种格式，自动识别）...&#10;格式1：37354 wusiufan----N31DG65i----xlje.3680188988@gosoftme.com----xlje.3680188988----OVVZOH7RJDAS7JO2ZJAOJW735T4XWB4X----[JSON数据]----香港&#10;格式2：从Excel复制粘贴的多行数据"></textarea><br>
-    <button onclick="convertFormat()">转换格式</button>
-    <button onclick="copyResult2()">复制转换结果</button>
+    <textarea id="input2" placeholder="粘贴数据（支持两种格式，自动识别）...&#10;格式1：37354 wusiufan----N31DG65i----xlje.3680188988@gosoftme.com----xlje.3680188988----OVVZOH7RJDAS7JO2ZJAOJW735T4XWB4X----[JSON数据]----香港&#10;格式2：从Excel复制粘贴的多行数据"></textarea>
+    <div class="button-group">
+        <button onclick="convertFormat()">转换格式</button>
+        <button onclick="copyResult2()">复制转换结果</button>
+    </div>
     <div class="output-wrapper">
     <div id="output2">转换结果显示在这里</div>
         <div id="stats2" class="stats"></div>
@@ -363,19 +541,16 @@
     <!-- 功能2：Tab转分隔符转换器 -->
     <h2>Tab转分隔符转换器</h2>
     <p>将制表符(Tab)分隔的数据转换为----分隔格式</p>
-    <textarea id="input3" placeholder="粘贴Tab分隔的数据...&#10;例：&#10;peterober666	VT0b8AjWXBfv	Q3HL D5YD Q3Z6 ZHZL O5UL 3CML 4WO3 7VYO	petrob85@gmx.com	q4J8ox42Ng	https://gmx.com/	https://2fa.plus/	us"></textarea><br>
-    <button onclick="convertTabToSeparator()">Tab转----</button>
-    <button onclick="copyResult3()">复制结果</button>
+    <textarea id="input3" placeholder="粘贴Tab分隔的数据...&#10;例：&#10;peterober666	VT0b8AjWXBfv	Q3HL D5YD Q3Z6 ZHZL O5UL 3CML 4WO3 7VYO	petrob85@gmx.com	q4J8ox42Ng	https://gmx.com/	https://2fa.plus/	us"></textarea>
+    <div class="button-group">
+        <button onclick="convertTabToSeparator()">Tab转----</button>
+        <button onclick="copyResult3()">复制结果</button>
+    </div>
     <div class="output-wrapper">
     <div id="output3">转换结果显示在这里</div>
     </div>
 
-    <!-- 功能3：批量打开链接 -->
-    <h2>批量打开链接</h2>
-    <p>每行一个URL，点击按钮批量打开（新标签页）</p>
-    <textarea id="input4" placeholder="粘贴URL列表（每行一个）...&#10;例：&#10;https://www.instagram.com/user1&#10;https://www.instagram.com/user2&#10;https://www.instagram.com/user3"></textarea><br>
-    <button onclick="openLinks()">批量打开链接</button>
-    <div id="progress4" class="stats" style="margin-top: 10px;"></div>
+
     </div>
 
     <script>
@@ -954,74 +1129,7 @@
             document.body.removeChild(temp);
         }
         
-        // 功能4：批量打开链接
-        function openLinks() {
-            let input = document.getElementById('input4').value.trim();
-            if (!input) {
-                document.getElementById('progress4').innerHTML = '<span style="color: #999;">请输入URL</span>';
-                return;
-            }
-            
-            // 解析每行URL
-            let lines = input.split('\n');
-            let urls = [];
-            
-            lines.forEach(line => {
-                let trimmed = line.trim();
-                if (!trimmed) return;
-                
-                // 验证并格式化URL
-                let url = trimmed;
-                // 如果没有协议，自动添加https://
-                if (!url.match(/^https?:\/\//i)) {
-                    url = 'https://' + url;
-                }
-                
-                // 验证URL格式
-                try {
-                    new URL(url);
-                    urls.push(url);
-                } catch (e) {
-                    // URL格式无效，跳过
-                }
-            });
-            
-            if (urls.length === 0) {
-                document.getElementById('progress4').innerHTML = '<span style="color: #ff6b6b;">未找到有效的URL</span>';
-                return;
-            }
-            
-            // 显示进度
-            let total = urls.length;
-            let opened = 0;
-            document.getElementById('progress4').innerHTML = '<span class="stats-title">已打开: 0 / ' + total + '</span>';
-            
-            // 逐个打开链接（新标签页）
-            // 使用很小的延迟（10ms）避免浏览器弹窗拦截
-            urls.forEach((url, index) => {
-                setTimeout(() => {
-                    let newWindow = window.open(url, '_blank');
-                    opened++;
-                    // 更新进度
-                    document.getElementById('progress4').innerHTML = '<span class="stats-title">已打开: ' + opened + ' / ' + total + '</span>';
-                    
-                    // 如果被拦截，提示用户
-                    if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-                        // 弹窗被拦截，提示用户
-                        if (opened === 1) {
-                            alert('浏览器阻止了弹窗，请允许此网站的弹窗权限后重试');
-                        }
-                    }
-                    
-                    // 完成后显示
-                    if (opened === total) {
-                        setTimeout(() => {
-                            document.getElementById('progress4').innerHTML = '<span class="stats-title" style="color: #4facfe;">完成！已打开 ' + total + ' 个链接</span>';
-                        }, 200);
-                    }
-                }, index * 10); // 每个链接间隔10ms
-            });
-        }
+
         
         // 文件拖拽功能
         (function() {
