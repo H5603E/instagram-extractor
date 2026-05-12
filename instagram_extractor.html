@@ -394,6 +394,61 @@
             justify-content: center;
         }
         
+        /* 用户名合并输出分隔符（仅第一个功能区） */
+        .delimiter-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 10px 16px;
+            margin-top: 18px;
+            padding: 12px 18px;
+            background: rgba(248, 250, 252, 0.9);
+            border: 1px solid rgba(59, 130, 246, 0.12);
+            border-radius: 16px;
+            font-size: 14px;
+            color: #64748b;
+            animation: fadeInUp 0.6s ease-out 0.35s both;
+        }
+        
+        .delimiter-label {
+            font-weight: 600;
+            color: #475569;
+            margin-right: 4px;
+        }
+        
+        .delimiter-option {
+            display: inline-flex;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+            gap: 5px;
+        }
+        
+        .delimiter-option input {
+            accent-color: #3b82f6;
+            cursor: pointer;
+        }
+        
+        .delimiter-custom-input {
+            width: 110px;
+            max-width: 40vw;
+            padding: 6px 10px;
+            font-size: 14px;
+            font-family: ui-monospace, 'Cascadia Code', monospace;
+            border: 1px solid rgba(59, 130, 246, 0.25);
+            border-radius: 10px;
+            background: #fff;
+            color: #334155;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        
+        .delimiter-custom-input:focus {
+            outline: none;
+            border-color: rgba(59, 130, 246, 0.5);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+        }
+        
         /* 为移动设备优化的基础样式 */
         @media (max-width: 768px) {
             body {
@@ -508,6 +563,14 @@
     <p><span class="review-label">最近评价：</span>我艹，这个网站巨他妈好用。</p>
     
     <textarea id="input" placeholder="支持两种格式：&#10;1. 链接格式：&lt;https://www.instagram.com/maryhvp19&gt;&#10;2. 模板格式：台灣自選C：&#10;   dailylife_recording&#10;   chime_bento"></textarea>
+    <div class="delimiter-row" title="多个用户名合并为一行时使用的分隔符">
+        <span class="delimiter-label">合并分隔符</span>
+        <label class="delimiter-option"><input type="radio" name="usernameSep" value="*" checked> *</label>
+        <label class="delimiter-option"><input type="radio" name="usernameSep" value="|"> |</label>
+        <label class="delimiter-option"><input type="radio" name="usernameSep" value=","> ,</label>
+        <label class="delimiter-option"><input type="radio" name="usernameSep" value="custom" id="usernameSepRadioCustom"> 自定义</label>
+        <input type="text" id="usernameSepCustom" class="delimiter-custom-input" maxlength="32" placeholder="其他字符" autocomplete="off" aria-label="自定义分隔符" onfocus="document.getElementById('usernameSepRadioCustom').checked=true" oninput="document.getElementById('usernameSepRadioCustom').checked=true">
+    </div>
     <div class="button-group">
         <button onclick="extract()">提取用户名</button>
         <button onclick="copyResult()">复制结果</button>
@@ -564,6 +627,17 @@
                 element.style.opacity = '1';
                 element.style.transform = 'translateY(0)';
             }, 10);
+        }
+        
+        /** 第一个功能区：合并多个用户名时的分隔符，默认 * */
+        function getUsernameDelimiter() {
+            let radio = document.querySelector('input[name="usernameSep"]:checked');
+            if (!radio) return '*';
+            if (radio.value === 'custom') {
+                let custom = document.getElementById('usernameSepCustom').value;
+                return custom !== '' ? custom : '*';
+            }
+            return radio.value;
         }
         
         // 功能1：提取Instagram用户名
@@ -660,7 +734,7 @@
             }
             
             // 显示结果（去重后的）
-            let result = uniqueUsernames.join('*');
+            let result = uniqueUsernames.join(getUsernameDelimiter());
             document.getElementById('output').innerText = result;
             animateOutput('output');
             
