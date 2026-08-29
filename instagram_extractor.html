@@ -4,48 +4,126 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Instagram用户名提取器</title>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             padding: 40px 20px;
             max-width: 900px;
             margin: auto;
-            background: #f8fafc;
+            background: linear-gradient(135deg, #eff6ff 0%, #bfdbfe 35%, #60a5fa 65%, #2563eb 100%);
+            background-size: 200% 200%;
+            animation: bgShift 18s ease infinite;
             min-height: 100vh;
             position: relative;
-            color: #333;
+            color: #1e3a5f;
+            overflow-x: hidden;
         }
-        
+
+        @keyframes bgShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
         body::before {
             content: '';
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle at 20% 80%, rgba(59, 130, 246, 0.08) 0%, transparent 50%),
-                        radial-gradient(circle at 80% 20%, rgba(16, 185, 129, 0.08) 0%, transparent 50%);
-            z-index: -1;
+            inset: 0;
+            background:
+                radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.45) 0%, transparent 45%),
+                radial-gradient(circle at 80% 20%, rgba(37, 99, 235, 0.15) 0%, transparent 40%);
+            z-index: 0;
+            pointer-events: none;
         }
-        
+
+        /* —— 弹幕层 —— */
+        .danmaku-layer {
+            position: fixed;
+            inset: 0;
+            z-index: 5;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .danmaku {
+            position: absolute;
+            white-space: nowrap;
+            font-size: 15px;
+            font-weight: 600;
+            color: #1e40af;
+            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.6);
+            padding: 6px 14px;
+            background: rgba(255, 255, 255, 0.55);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.75);
+            border-radius: 999px;
+            will-change: transform;
+            animation: danmakuMove linear forwards;
+        }
+
+        @keyframes danmakuMove {
+            from { transform: translateX(0); }
+            to { transform: translateX(calc(-100vw - 100%)); }
+        }
+
+        .ad-left, .ad-right {
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 200px;
+            height: 400px;
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.65);
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(37, 99, 235, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: 700;
+            color: #1d4ed8;
+            z-index: 10;
+            animation: fadeIn 0.8s ease-out;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .ad-left { left: 20px; }
+        .ad-right { right: 20px; }
+
+        .ad-left:hover, .ad-right:hover {
+            transform: translateY(-50%) scale(1.05);
+            background: rgba(255, 255, 255, 0.45);
+            box-shadow: 0 12px 40px rgba(37, 99, 235, 0.2);
+        }
+
+        @media (max-width: 1400px) {
+            .ad-left, .ad-right { display: none; }
+        }
+
         .container {
             position: relative;
-            z-index: 1;
-            background: #ffffff;
+            z-index: 20;
+            background: rgba(255, 255, 255, 0.48);
+            backdrop-filter: blur(24px) saturate(1.3);
+            -webkit-backdrop-filter: blur(24px) saturate(1.3);
             border-radius: 30px;
             padding: 40px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-            border: 1px solid rgba(0, 0, 0, 0.05);
+            box-shadow:
+                0 8px 32px rgba(37, 99, 235, 0.12),
+                inset 0 1px 0 rgba(255, 255, 255, 0.75),
+                inset 0 -1px 0 rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.7);
             animation: containerSlideIn 0.8s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        
+
         @keyframes containerSlideIn {
             from {
                 opacity: 0;
@@ -56,60 +134,20 @@
                 transform: translateY(0) scale(1);
             }
         }
-        
-        .ad-left, .ad-right {
-            position: fixed;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 200px;
-            height: 400px;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 20px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            font-weight: 700;
-            color: #3b82f6;
-            z-index: 10;
-            animation: fadeIn 0.8s ease-out;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        .ad-left {
-            left: 20px;
-        }
-        
-        .ad-right {
-            right: 20px;
-        }
-        
-        .ad-left:hover, .ad-right:hover {
-            transform: translateY(-50%) scale(1.05);
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
-        }
-        
-        @media (max-width: 1400px) {
-            .ad-left, .ad-right {
-                display: none;
-            }
-        }
-        
+
         h1 {
-            color: #2d3748;
+            color: #1e40af;
             font-size: 2.8em;
             font-weight: 800;
             margin-bottom: 15px;
             text-align: center;
             animation: fadeInDown 0.6s ease-out;
             letter-spacing: -0.5px;
+            text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
         }
-        
+
         h2 {
-            color: #434343;
+            color: #1e40af;
             font-size: 2em;
             font-weight: 700;
             margin: 60px 0 20px 0;
@@ -117,8 +155,9 @@
             animation: fadeInDown 0.6s ease-out 0.1s both;
             letter-spacing: -0.3px;
             position: relative;
+            text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
         }
-        
+
         h2::after {
             content: '';
             position: absolute;
@@ -127,73 +166,76 @@
             transform: translateX(-50%);
             width: 80px;
             height: 4px;
-            background: linear-gradient(135deg, #3b82f6 0%, #10b981 100%);
+            background: linear-gradient(135deg, #3b82f6 0%, #93c5fd 100%);
             border-radius: 2px;
         }
-        
-        p {
-            color: #666;
+
+        .intro {
+            color: #334155;
             font-size: 16px;
             line-height: 1.7;
             margin-bottom: 25px;
             text-align: center;
             animation: fadeIn 0.6s ease-out 0.2s both;
-            font-weight: 400;
         }
-        
+
         .review-label {
-            color: #ffd700;
+            color: #2563eb;
             font-weight: 700;
         }
-        
+
         textarea {
             width: 100%;
             height: 280px;
             font-size: 16px;
             padding: 24px;
-            border: 2px solid rgba(59, 130, 246, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.5);
             border-radius: 22px;
-            background: #ffffff;
-            color: #333;
+            background: rgba(255, 255, 255, 0.35);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            color: #1e293b;
             font-family: inherit;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.6);
             resize: vertical;
             animation: fadeInUp 0.6s ease-out 0.3s both;
         }
-        
+
         textarea:focus {
             outline: none;
-            border-color: rgba(59, 130, 246, 0.5);
-            background: #ffffff;
-            box-shadow: 0 8px 24px rgba(59, 130, 246, 0.25);
+            border-color: rgba(255, 255, 255, 0.8);
+            background: rgba(255, 255, 255, 0.5);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
             transform: translateY(-2px);
         }
-        
+
         textarea::placeholder {
-            color: #a0a0a0;
+            color: #64748b;
             font-weight: 300;
         }
-        
+
         button {
             padding: 16px 36px;
             font-size: 16px;
             font-weight: 600;
             margin: 20px 12px 0 0;
-            background: linear-gradient(135deg, #3b82f6 0%, #10b981 100%);
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.9) 0%, rgba(59, 130, 246, 0.9) 100%);
             color: white;
-            border: none;
+            border: 1px solid rgba(255, 255, 255, 0.55);
             border-radius: 28px;
             cursor: pointer;
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             position: relative;
             overflow: hidden;
             animation: fadeInUpButton 0.6s ease-out 0.4s forwards;
             transform: scale(1);
             letter-spacing: 0.3px;
         }
-        
+
         button::before {
             content: '';
             position: absolute;
@@ -202,190 +244,31 @@
             width: 0;
             height: 0;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.35);
             transform: translate(-50%, -50%);
             transition: width 0.5s, height 0.5s;
         }
-        
+
         button:hover {
             transform: scale(1.05) !important;
-            box-shadow: 0 12px 30px rgba(59, 130, 246, 0.5);
+            box-shadow: 0 12px 30px rgba(59, 130, 246, 0.45);
         }
-        
+
         button:active {
             transform: scale(0.98) !important;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
         }
-        
+
         button:active::before {
             width: 400px;
             height: 400px;
         }
-        
-        button:focus {
-            outline: none;
+
+        button:focus { outline: none; }
+
+        .button-group button:nth-child(2n) {
+            background: linear-gradient(135deg, rgba(96, 165, 250, 0.95) 0%, rgba(37, 99, 235, 0.9) 100%);
         }
-        
-        /* 为不同功能的按钮添加微妙的样式变化 */
-        button:nth-child(2n) {
-            background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
-        }
-        
-        button:nth-child(2n):hover {
-            box-shadow: 0 12px 30px rgba(16, 185, 129, 0.5);
-        }
-        
-        .output-wrapper {
-            margin-top: 30px;
-            animation: fadeInUp 0.6s ease-out 0.5s both;
-        }
-        
-        #output, #output2, #output3 {
-            padding: 28px;
-            background: #fafafa;
-            border: 2px solid rgba(102, 126, 234, 0.1);
-            border-radius: 22px;
-            font-size: 16px;
-            white-space: pre-wrap;
-            word-break: break-all;
-            min-height: 120px;
-            color: #333;
-            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.05);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            animation: slideIn 0.5s ease-out;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        #output:hover, #output2:hover, #output3:hover {
-            border-color: rgba(102, 126, 234, 0.3);
-            background: #ffffff;
-            box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.05), 0 2px 8px rgba(102, 126, 234, 0.1);
-        }
-        
-        /* 增强版slideIn动画 */
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateX(-20px) scale(0.98);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0) scale(1);
-            }
-        }
-        
-        #output:empty, #output2:empty, #output3:empty {
-            color: #a0a0a0;
-            font-style: italic;
-        }
-        
-        .stats {
-            margin-top: 18px;
-            font-size: 15px;
-            color: #666;
-            padding: 12px 0;
-            animation: fadeIn 0.5s ease-out 0.6s both;
-            font-weight: 500;
-        }
-        
-        #dropZone {
-            margin-bottom: 20px;
-            padding: 40px;
-            border: 3px dashed rgba(59, 130, 246, 0.3);
-            border-radius: 22px;
-            background: rgba(59, 130, 246, 0.05);
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            animation: fadeInUp 0.6s ease-out 0.35s both;
-        }
-        
-        #dropZone:hover {
-            border-color: rgba(59, 130, 246, 0.6);
-            background: rgba(59, 130, 246, 0.1);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(59, 130, 246, 0.15);
-        }
-        
-        #dropZone .drop-text {
-            color: #3b82f6;
-            font-size: 18px;
-            font-weight: 700;
-        }
-        
-        #dropZone .drop-hint {
-            color: #999;
-            font-size: 14px;
-            margin-top: 8px;
-        }
-        
-        .stats-title {
-            display: inline;
-            font-weight: 600;
-        }
-        
-        .duplicate-item {
-            color: #ff6b6b;
-            display: inline;
-            margin-left: 10px;
-            font-weight: 600;
-        }
-        
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-            to {
-                opacity: 1;
-            }
-        }
-        
-        @keyframes fadeInDown {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        @keyframes fadeInUpButton {
-            from {
-                opacity: 0;
-                transform: translateY(20px) scale(1);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-        }
-        
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateX(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-        
-        /* 按钮组样式 */
+
         .button-group {
             display: flex;
             flex-wrap: wrap;
@@ -393,8 +276,58 @@
             margin-top: 25px;
             justify-content: center;
         }
-        
-        /* 用户名合并输出分隔符（仅第一个功能区） */
+
+        .button-group button {
+            margin: 0;
+        }
+
+        .output-wrapper {
+            margin-top: 30px;
+            animation: fadeInUp 0.6s ease-out 0.5s both;
+        }
+
+        #output, #output3 {
+            padding: 28px;
+            background: rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.45);
+            border-radius: 22px;
+            font-size: 16px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            min-height: 120px;
+            color: #1e293b;
+            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.06);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #output:hover, #output3:hover {
+            background: rgba(255, 255, 255, 0.42);
+            border-color: rgba(255, 255, 255, 0.65);
+        }
+
+        .stats {
+            margin-top: 18px;
+            font-size: 15px;
+            color: #334155;
+            padding: 12px 0;
+            animation: fadeIn 0.5s ease-out 0.6s both;
+            font-weight: 500;
+        }
+
+        .stats-title {
+            display: inline;
+            font-weight: 600;
+        }
+
+        .duplicate-item {
+            color: #dc2626;
+            display: inline;
+            margin-left: 10px;
+            font-weight: 600;
+        }
+
         .delimiter-row {
             display: flex;
             flex-wrap: wrap;
@@ -403,20 +336,22 @@
             gap: 10px 16px;
             margin-top: 18px;
             padding: 12px 18px;
-            background: rgba(248, 250, 252, 0.9);
-            border: 1px solid rgba(59, 130, 246, 0.12);
+            background: rgba(255, 255, 255, 0.45);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.7);
             border-radius: 16px;
             font-size: 14px;
-            color: #64748b;
+            color: #334155;
             animation: fadeInUp 0.6s ease-out 0.35s both;
         }
-        
+
         .delimiter-label {
             font-weight: 600;
-            color: #475569;
+            color: #1e40af;
             margin-right: 4px;
         }
-        
+
         .delimiter-option {
             display: inline-flex;
             align-items: center;
@@ -424,322 +359,365 @@
             user-select: none;
             gap: 5px;
         }
-        
+
         .delimiter-option input {
             accent-color: #3b82f6;
             cursor: pointer;
         }
-        
+
         .delimiter-custom-input {
             width: 110px;
             max-width: 40vw;
             padding: 6px 10px;
             font-size: 14px;
             font-family: ui-monospace, 'Cascadia Code', monospace;
-            border: 1px solid rgba(59, 130, 246, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.5);
             border-radius: 10px;
-            background: #fff;
-            color: #334155;
+            background: rgba(255, 255, 255, 0.4);
+            color: #1e293b;
             transition: border-color 0.2s, box-shadow 0.2s;
         }
-        
+
         .delimiter-custom-input:focus {
             outline: none;
-            border-color: rgba(59, 130, 246, 0.5);
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+            border-color: rgba(255, 255, 255, 0.85);
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
         }
-        
-        /* 为移动设备优化的基础样式 */
+
+        .toast {
+            position: fixed;
+            bottom: 32px;
+            left: 50%;
+            transform: translateX(-50%) translateY(12px);
+            padding: 12px 22px;
+            background: rgba(30, 41, 59, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            color: #fff;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s, transform 0.2s;
+            z-index: 100;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInUpButton {
+            from { opacity: 0; transform: translateY(20px) scale(1); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
         @media (max-width: 768px) {
-            body {
-                padding: 20px 15px;
-            }
-            
-            .container {
-                padding: 30px 25px;
-            }
-            
-            h1 {
-                font-size: 2.2em;
-            }
-            
-            h2 {
-                font-size: 1.7em;
-            }
-            
-            h2::after {
-                width: 60px;
-                height: 3px;
-            }
-            
+            body { padding: 20px 15px; }
+            .container { padding: 30px 25px; }
+            h1 { font-size: 2.2em; }
+            h2 { font-size: 1.7em; }
+            h2::after { width: 60px; height: 3px; }
             .button-group {
                 flex-direction: column;
                 align-items: stretch;
                 margin-top: 20px;
             }
-            
             button {
                 width: 100%;
                 margin: 0;
                 padding: 14px 32px;
             }
-            
             textarea {
                 height: 220px;
                 padding: 20px;
             }
-            
-            #dropZone {
-                padding: 30px 20px;
-            }
-            
-            #output, #output2, #output3 {
+            #output, #output3 {
                 padding: 20px;
                 min-height: 100px;
             }
+            .danmaku { font-size: 13px; padding: 5px 12px; }
         }
-        
-        /* 为超小屏幕设备优化 */
+
         @media (max-width: 480px) {
-            body {
-                padding: 15px 10px;
-            }
-            
+            body { padding: 15px 10px; }
             .container {
                 padding: 25px 20px;
                 border-radius: 25px;
             }
-            
-            h1 {
-                font-size: 2em;
-            }
-            
+            h1 { font-size: 2em; }
             h2 {
                 font-size: 1.5em;
                 margin: 40px 0 15px 0;
             }
-            
-            p {
-                font-size: 15px;
-                line-height: 1.6;
-            }
-            
+            .intro { font-size: 15px; }
             textarea {
                 height: 180px;
                 font-size: 15px;
             }
-            
             button {
                 font-size: 15px;
                 padding: 12px 28px;
             }
-            
-            #dropZone .drop-text {
-                font-size: 16px;
-            }
-            
-            #dropZone .drop-hint {
-                font-size: 13px;
-            }
         }
-        
-        /* 为平板横屏优化 */
+
         @media (min-width: 769px) and (max-width: 1024px) {
-            .container {
-                padding: 40px 30px;
-            }
+            .container { padding: 40px 30px; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .danmaku { display: none; }
+            body { animation: none; }
         }
     </style>
 </head>
 <body>
-    <!-- 左侧广告位 -->
+    <div class="danmaku-layer" id="danmakuLayer" aria-hidden="true"></div>
+
     <div class="ad-left">广告位招租</div>
-    
-    <!-- 右侧广告位 -->
     <div class="ad-right">广告位招租</div>
-    
+
     <div class="container">
-    <h1>Instagram用户名提取器</h1>
-    <p><span class="review-label">最近评价：</span>我艹，这个网站巨他妈好用。</p>
-    
-    <textarea id="input" placeholder="支持两种格式：&#10;1. 链接格式：&lt;https://www.instagram.com/maryhvp19&gt;&#10;2. 模板格式：台灣自選C：&#10;   dailylife_recording&#10;   chime_bento"></textarea>
-    <div class="delimiter-row" title="多个用户名合并为一行时使用的分隔符">
-        <span class="delimiter-label">合并分隔符</span>
-        <label class="delimiter-option"><input type="radio" name="usernameSep" value="*" checked> *</label>
-        <label class="delimiter-option"><input type="radio" name="usernameSep" value="|"> |</label>
-        <label class="delimiter-option"><input type="radio" name="usernameSep" value=","> ,</label>
-        <label class="delimiter-option"><input type="radio" name="usernameSep" value="custom" id="usernameSepRadioCustom"> 自定义</label>
-        <input type="text" id="usernameSepCustom" class="delimiter-custom-input" maxlength="32" placeholder="其他字符" autocomplete="off" aria-label="自定义分隔符" onfocus="document.getElementById('usernameSepRadioCustom').checked=true" oninput="document.getElementById('usernameSepRadioCustom').checked=true">
-    </div>
-    <div class="button-group">
-        <button onclick="extract()">提取用户名</button>
-        <button onclick="copyResult()">复制结果</button>
-    </div>
-    
-    <div class="output-wrapper">
-    <div id="output">结果显示在这里</div>
-        <div id="stats1" class="stats"></div>
+        <h1>Instagram用户名提取器</h1>
+        <p class="intro"><span class="review-label">最近评价：</span>我艹，这个网站巨他妈好用。</p>
+
+        <textarea id="input" placeholder="支持两种格式：&#10;1. 链接格式：&lt;https://www.instagram.com/maryhvp19&gt;&#10;2. 模板格式：台灣自選C：&#10;   dailylife_recording&#10;   chime_bento"></textarea>
+        <div class="delimiter-row" title="多个用户名合并为一行时使用的分隔符">
+            <span class="delimiter-label">合并分隔符</span>
+            <label class="delimiter-option"><input type="radio" name="usernameSep" value="*" checked> *</label>
+            <label class="delimiter-option"><input type="radio" name="usernameSep" value="|"> |</label>
+            <label class="delimiter-option"><input type="radio" name="usernameSep" value=","> ,</label>
+            <label class="delimiter-option"><input type="radio" name="usernameSep" value="custom" id="usernameSepRadioCustom"> 自定义</label>
+            <input type="text" id="usernameSepCustom" class="delimiter-custom-input" maxlength="32" placeholder="其他字符" autocomplete="off" aria-label="自定义分隔符" onfocus="document.getElementById('usernameSepRadioCustom').checked=true" oninput="document.getElementById('usernameSepRadioCustom').checked=true">
+        </div>
+        <div class="button-group">
+            <button type="button" onclick="extract()">提取用户名</button>
+            <button type="button" onclick="copyResult('output')">复制结果</button>
+        </div>
+
+        <div class="output-wrapper">
+            <div id="output">结果显示在这里</div>
+            <div id="stats1" class="stats"></div>
+        </div>
+
+        <h2>Tab转分隔符转换器</h2>
+        <p class="intro">将制表符(Tab)分隔的数据转换为----分隔格式，并在每行末尾追加所选网址</p>
+        <textarea id="input3" placeholder="粘贴Tab分隔的数据...&#10;例：&#10;do__ant	PY8Z0rRj5u	JMQMKCADEIPF7QITYCMQMUDWHTZSKHIB	gd4dfwowh0zg@vnvmail.com	韩国"></textarea>
+        <div class="delimiter-row" title="转换后每行末尾追加的网址">
+            <span class="delimiter-label">追加网址</span>
+            <label class="delimiter-option"><input type="radio" name="tabUrlSuffix" value="https://17cce.com/" checked> https://17cce.com/</label>
+            <label class="delimiter-option"><input type="radio" name="tabUrlSuffix" value="https://2fa.plus/"> https://2fa.plus/</label>
+        </div>
+        <div class="button-group">
+            <button type="button" onclick="convertTabToSeparator()">Tab转----</button>
+            <button type="button" onclick="copyResult('output3', true)">复制结果</button>
+        </div>
+        <div class="output-wrapper">
+            <div id="output3">转换结果显示在这里</div>
+        </div>
     </div>
 
-    <!-- 功能1：格式转换器 -->
-    <h2>格式转换器</h2>
-    <p>支持两种格式：1. ID----用户名----密码...格式 或 2. Excel复制粘贴的多行格式（自动识别）</p>
-    
-    <!-- 文件拖拽区域 -->
-    <div id="dropZone">
-        <div class="drop-text">📁 拖拽 TXT 或 Excel 文件到这里导入</div>
-        <div class="drop-hint">支持 .txt 和 .xlsx 文件</div>
-    </div>
-    
-    <textarea id="input2" placeholder="粘贴数据（支持两种格式，自动识别）...&#10;格式1：37354 wusiufan----N31DG65i----xlje.3680188988@gosoftme.com----xlje.3680188988----OVVZOH7RJDAS7JO2ZJAOJW735T4XWB4X----[JSON数据]----香港&#10;格式2：从Excel复制粘贴的多行数据"></textarea>
-    <div class="button-group">
-        <button onclick="convertFormat()">转换格式</button>
-        <button onclick="copyResult2()">复制转换结果</button>
-    </div>
-    <div class="output-wrapper">
-    <div id="output2">转换结果显示在这里</div>
-        <div id="stats2" class="stats"></div>
-    </div>
-
-    <!-- 功能2：Tab转分隔符转换器 -->
-    <h2>Tab转分隔符转换器</h2>
-    <p>将制表符(Tab)分隔的数据转换为----分隔格式</p>
-    <textarea id="input3" placeholder="粘贴Tab分隔的数据...&#10;例：&#10;peterober666	VT0b8AjWXBfv	Q3HL D5YD Q3Z6 ZHZL O5UL 3CML 4WO3 7VYO	petrob85@gmx.com	q4J8ox42Ng	https://gmx.com/	https://2fa.plus/	us"></textarea>
-    <div class="button-group">
-        <button onclick="convertTabToSeparator()">Tab转----</button>
-        <button onclick="copyResult3()">复制结果</button>
-    </div>
-    <div class="output-wrapper">
-    <div id="output3">转换结果显示在这里</div>
-    </div>
-
-
-    </div>
+    <div id="toast" class="toast" role="status"></div>
 
     <script>
-        // 添加输出框更新动画的辅助函数
-        function animateOutput(elementId) {
-            const element = document.getElementById(elementId);
-            element.style.opacity = '0';
-            element.style.transform = 'translateY(10px)';
-            setTimeout(() => {
-                element.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
-                element.style.opacity = '1';
-                element.style.transform = 'translateY(0)';
-            }, 10);
+        /* —— 弹幕 —— */
+        const DANMAKU_TEXTS = [
+            '作者真牛逼',
+            '感谢作者',
+            '作者太强了',
+            '好用到哭',
+            '作者人美心善',
+            '永远的神',
+            '作者 YYDS',
+            '爱了爱了',
+            '作者辛苦了',
+            '这工具绝了',
+            '作者牛批',
+            '感谢大佬分享',
+            '作者简直无敌',
+            '好用！收藏了',
+            '作者太会了',
+            '跪谢作者',
+            '作者带飞',
+            '神中神',
+            '作者永远年轻',
+            '好用到飞起'
+        ];
+
+        (function initDanmaku() {
+            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+            const layer = document.getElementById('danmakuLayer');
+            let idx = 0;
+            const tracks = 8;
+
+            function spawn() {
+                const text = DANMAKU_TEXTS[idx % DANMAKU_TEXTS.length];
+                idx++;
+                const el = document.createElement('div');
+                el.className = 'danmaku';
+                el.textContent = text;
+
+                const track = Math.floor(Math.random() * tracks);
+                const top = 8 + track * ((window.innerHeight - 80) / tracks);
+                const duration = 10 + Math.random() * 8;
+                const delay = Math.random() * 0.4;
+
+                el.style.top = top + 'px';
+                el.style.left = '100vw';
+                el.style.animationDuration = duration + 's';
+                el.style.animationDelay = delay + 's';
+                el.style.fontSize = (14 + Math.random() * 4) + 'px';
+                el.style.opacity = String(0.75 + Math.random() * 0.25);
+
+                layer.appendChild(el);
+                el.addEventListener('animationend', () => el.remove());
+            }
+
+            spawn();
+            setInterval(spawn, 1400);
+        })();
+
+        function toast(msg) {
+            const el = document.getElementById('toast');
+            el.textContent = msg;
+            el.classList.add('show');
+            clearTimeout(toast._t);
+            toast._t = setTimeout(() => el.classList.remove('show'), 1600);
         }
-        
-        /** 第一个功能区：合并多个用户名时的分隔符，默认 * */
+
         function getUsernameDelimiter() {
-            let radio = document.querySelector('input[name="usernameSep"]:checked');
+            const radio = document.querySelector('input[name="usernameSep"]:checked');
             if (!radio) return '*';
             if (radio.value === 'custom') {
-                let custom = document.getElementById('usernameSepCustom').value;
+                const custom = document.getElementById('usernameSepCustom').value;
                 return custom !== '' ? custom : '*';
             }
             return radio.value;
         }
-        
-        // 功能1：提取Instagram用户名
+
+        async function copyResult(outputId, stripCount) {
+            let text = document.getElementById(outputId).innerText.trim();
+            if (!text || text === '结果显示在这里' || text === '转换结果显示在这里' ||
+                text === '请输入内容' || text.includes('未找到') || text.includes('格式不正确')) {
+                toast('没有可复制的内容');
+                return;
+            }
+            if (stripCount) {
+                text = text.replace(/\n\n数量：\d+个\s*$/, '').trim();
+            }
+            try {
+                await navigator.clipboard.writeText(text);
+                toast('已复制');
+            } catch {
+                const temp = document.createElement('textarea');
+                temp.value = text;
+                temp.style.cssText = 'position:fixed;opacity:0';
+                document.body.appendChild(temp);
+                temp.select();
+                try {
+                    document.execCommand('copy');
+                    toast('已复制');
+                } catch {
+                    toast('复制失败');
+                }
+                document.body.removeChild(temp);
+            }
+        }
+
         function extract() {
-            let input = document.getElementById('input').value.trim();
+            const input = document.getElementById('input').value.trim();
             if (!input) {
                 document.getElementById('output').innerText = '请输入内容';
                 document.getElementById('stats1').innerHTML = '';
                 return;
             }
-            
-            let usernames = [];
-            
-            // 检测是否包含 instagram.com 链接
-            let hasInstagramLink = /instagram\.com/i.test(input);
-            
+
+            const usernames = [];
+            const hasInstagramLink = /instagram\.com/i.test(input);
+
             if (hasInstagramLink) {
-                // 链接格式：使用原有逻辑
-                let regex = /(?:https?:\/\/)?(?:www\.)?instagram\.com\/([a-zA-Z0-9._]+)/gi;
-                let matches = input.matchAll(regex);
-                for (let match of matches) {
-                    usernames.push(match[1]);
+                const regex = /(?:https?:\/\/)?(?:www\.)?instagram\.com\/([a-zA-Z0-9._]+)/gi;
+                for (const match of input.matchAll(regex)) {
+                    const name = match[1];
+                    if (!/^(p|reel|reels|stories|explore|accounts|direct|tv)$/i.test(name)) {
+                        usernames.push(name);
+                    }
                 }
             } else {
-                // 模板格式：提取所有用户名（跳过包含中文的行）
-                let lines = input.split('\n');
-                lines.forEach(line => {
-                    let trimmed = line.trim();
-                    // 跳过空行
+                input.split('\n').forEach(line => {
+                    const trimmed = line.trim();
                     if (!trimmed) return;
-                    
-                    // 检测是否包含中文字符
-                    let hasChinese = /[\u4e00-\u9fa5]/.test(trimmed);
-                    
+
+                    const hasChinese = /[\u4e00-\u9fa5]/.test(trimmed);
                     if (hasChinese) {
-                        // 如果包含中文，检查是否有冒号（：或:），如果有则提取冒号后面的用户名
-                        let colonIndex = trimmed.search(/[：:]/);
+                        const colonIndex = trimmed.search(/[：:]/);
                         if (colonIndex !== -1) {
-                            // 提取冒号后面的部分
-                            let afterColon = trimmed.substring(colonIndex + 1).trim();
-                            // 如果冒号后面有内容，尝试提取用户名
+                            const afterColon = trimmed.substring(colonIndex + 1).trim();
                             if (afterColon) {
-                                // 可能冒号后面有多个用户名（用空格分隔），提取第一个
-                                let firstPart = afterColon.split(/\s+/)[0].trim();
-                                if (firstPart && firstPart.match(/^[a-zA-Z0-9._]+$/)) {
+                                const firstPart = afterColon.split(/\s+/)[0].trim();
+                                if (firstPart && /^[a-zA-Z0-9._]+$/.test(firstPart)) {
                                     usernames.push(firstPart);
                                 }
                             }
                         }
-                        // 包含中文的行跳过（除非上面已经提取了用户名）
                         return;
                     }
-                    
-                    // 不包含中文的行，提取用户名
-                    // 可能一行有多个用户名（用空格分隔）
-                    let parts = trimmed.split(/\s+/);
-                    parts.forEach(part => {
-                        let username = part.trim();
-                        // 验证用户名格式（只包含字母、数字、点、下划线）
-                        if (username && username.match(/^[a-zA-Z0-9._]+$/)) {
+
+                    trimmed.split(/\s+/).forEach(part => {
+                        const username = part.trim();
+                        if (username && /^[a-zA-Z0-9._]+$/.test(username)) {
                             usernames.push(username);
                         }
                     });
                 });
             }
-            
+
             if (usernames.length === 0) {
                 document.getElementById('output').innerText = '未找到Instagram用户名\n请检查是否包含 instagram.com/用户名 格式或模板格式';
                 document.getElementById('stats1').innerHTML = '';
                 return;
             }
-            
-            // 统计重复
-            let countMap = {};
-            usernames.forEach(username => {
-                countMap[username] = (countMap[username] || 0) + 1;
-            });
-            
-            // 去重，保持第一次出现的顺序
-            let uniqueUsernames = [];
-            let seen = new Set();
-            for (let username of usernames) {
-                if (!seen.has(username)) {
-                    seen.add(username);
-                    uniqueUsernames.push(username);
+
+            const countMap = {};
+            usernames.forEach(u => { countMap[u] = (countMap[u] || 0) + 1; });
+
+            const unique = [];
+            const seen = new Set();
+            for (const u of usernames) {
+                if (!seen.has(u)) {
+                    seen.add(u);
+                    unique.push(u);
                 }
             }
-            
-            let duplicates = [];
-            for (let username in countMap) {
-                if (countMap[username] > 1) {
-                    duplicates.push({username: username, count: countMap[username]});
+
+            const duplicates = [];
+            for (const u in countMap) {
+                if (countMap[u] > 1) {
+                    duplicates.push({ username: u, count: countMap[u] });
                 }
             }
-            
-            // 显示结果（去重后的）
-            let result = uniqueUsernames.join(getUsernameDelimiter());
-            document.getElementById('output').innerText = result;
-            animateOutput('output');
-            
-            // 显示统计信息（显示去重后的数量）
-            let statsHtml = '<span class="stats-title">数量: ' + uniqueUsernames.length + '</span>';
+
+            document.getElementById('output').innerText = unique.join(getUsernameDelimiter());
+
+            let statsHtml = '<span class="stats-title">数量: ' + unique.length + '</span>';
             if (duplicates.length > 0) {
                 statsHtml += '<span>，重复:';
                 duplicates.forEach((dup, index) => {
@@ -750,577 +728,32 @@
             }
             document.getElementById('stats1').innerHTML = statsHtml;
         }
-        
-        function copyResult() {
-            let text = document.getElementById('output').innerText.trim();
-            if (!text || text === '请输入内容' || text.includes('未找到')) {
-                return;
-            }
-            
-            let temp = document.createElement('textarea');
-            temp.value = text;
-            temp.style.position = 'fixed';
-            temp.style.opacity = '0';
-            document.body.appendChild(temp);
-            temp.select();
-            
-            try {
-                document.execCommand('copy');
-            } catch (err) {
-                // 静默失败
-            }
-            
-            document.body.removeChild(temp);
-        }
-        
-        // 功能2：格式转换器
-        function convertFormat() {
-            let input = document.getElementById('input2').value.trim();
-            if (!input) {
-                document.getElementById('output2').innerText = '请输入内容';
-                document.getElementById('stats2').innerHTML = '';
-                return;
-            }
-            
-            // 检测格式类型：如果包含----分隔符，使用旧格式；否则使用新格式（Excel复制粘贴）
-            let isOldFormat = input.includes('----');
-            
-            if (isOldFormat) {
-                convertOldFormat(input);
-            } else {
-                convertExcelFormat(input);
-            }
-        }
-        
-        // 旧格式转换（原有的----分隔格式）
-        function convertOldFormat(input) {
-            let lines = input.split('\n');
-            let results = [];
-            
-            lines.forEach(line => {
-                if (line.trim() === '') return;
-                
-                // 处理每行数据
-                let firstPartEnd = line.indexOf('----');
-                if (firstPartEnd === -1) return;
-                
-                let firstPart = line.substring(0, firstPartEnd);
-                let rest = line.substring(firstPartEnd + 4);
-                
-                // 从firstPart中提取用户名
-                let username = '';
-                let lastSpaceIndex = firstPart.lastIndexOf(' ');
-                if (lastSpaceIndex !== -1) {
-                    username = firstPart.substring(lastSpaceIndex + 1);
-                } else {
-                    username = firstPart;
-                }
-                
-                // 分割剩余部分
-                let restParts = rest.split('----');
-                
-                // 提取各部分
-                let password = restParts[0] || '';
-                let email = restParts[1] || '';
-                let userId = restParts[2] || '';
-                let twofa = restParts[3] || '';  // 2FA在第4个位置（索引3）
-                let country = '';
-                
-                // 如果restParts有6个或更多元素，最后一个是国家
-                if (restParts.length >= 6) {
-                    country = restParts[restParts.length - 1];
-                }
-                
-                // 构建新格式（顺序：用户名、密码、2FA、邮箱、用户ID、国家、URL1、URL2）
-                let newFormat = [
-                    username,                      // 用户名
-                    password,                      // 密码
-                    twofa,                         // 2FA
-                    email,                         // 邮箱
-                    userId,                        // 用户ID
-                    country,                       // 国家
-                    'https://mail.gosoftme.com/',  // 新增的固定URL
-                    'https://2fa.plus/'            // 固定URL
-                ].join('----');
-                
-                results.push(newFormat);
-            });
-            
-            if (results.length === 0) {
-                document.getElementById('output2').innerText = '格式不正确或没有有效数据';
-                document.getElementById('stats2').innerHTML = '';
-                return;
-            }
-            
-            // 每行之间空一行（两个换行符），最后空一行并显示数量
-            let outputText = results.join('\n\n') + '\n\n数量：' + results.length + '个';
-            document.getElementById('output2').innerText = outputText;
-            animateOutput('output2');
-            
-            // 显示统计信息（格式与stats1一致）
-            let statsHtml = '<span class="stats-title">数量: ' + results.length + '个</span>';
-            document.getElementById('stats2').innerHTML = statsHtml;
-        }
-        
-        // 新格式转换（Excel复制粘贴格式，支持Tab分隔和换行分隔）
-        function convertExcelFormat(input) {
-            let results = [];
-            
-            // 检测格式：
-            // 1. 如果第一行包含Tab且列数很多（>5列），说明是电脑格式（单行一条记录）
-            // 2. 如果包含Tab但列数较少，或者按序号分割，说明是手机格式（多行一条记录）
-            let firstLine = input.split('\n')[0].trim();
-            let hasTab = firstLine.includes('\t');
-            let isTabFormat = false;
-            
-            if (hasTab) {
-                let columns = firstLine.split('\t').filter(c => c.trim());
-                // 如果第一行列数很多（>5列），说明是电脑格式
-                if (columns.length > 5) {
-                    isTabFormat = true;
-                }
-            }
-            
-            if (isTabFormat) {
-                // 电脑格式：Tab分隔的单行数据
-                let lines = input.split('\n').filter(l => l.trim());
-                
-                // 检测新格式：列数>=11，且最后一列是URL（包含http://或https://）
-                let isNewFormat = false;
-                if (lines.length > 0) {
-                    let firstDataLine = lines[0];
-                    let testColumns = firstDataLine.split('\t');
-                    if (testColumns.length >= 11) {
-                        let lastCol = testColumns[testColumns.length - 1].trim();
-                        if (lastCol.match(/^https?:\/\//)) {
-                            isNewFormat = true;
-                        }
-                    }
-                }
-                
-                lines.forEach(line => {
-                    // 按Tab分割列
-                    let columns = line.split('\t').map(c => c.trim());
-                    
-                    if (columns.length < 3) return;
-                    
-                    let username = '';
-                    let password = '';
-                    let twofa = '';
-                    let email = '';
-                    let userId = '';
-                    let country = '';
-                    let emailUrl = '';
-                    
-                    if (isNewFormat && columns.length >= 11) {
-                        // 新格式：列1=用户名, 列2=密码, 列3=2FA, 列7=邮箱, 列8=用户ID, 列11=国家, 列12=邮箱URL
-                        username = columns[0] || '';
-                        password = columns[1] || '';
-                        twofa = columns[2] || '';
-                        email = columns[6] || '';
-                        userId = columns[7] || '';
-                        country = columns[10] || '';
-                        emailUrl = columns[11] || '';
-                    } else {
-                        // 旧格式：列1=序号, 列2=用户名, 列3=密码, 列4=2FA, 列8=邮箱, 列9=用户ID
-                        username = columns[1] || '';
-                        password = columns[2] || '';
-                        twofa = columns[3] || '';
-                        
-                        // 查找邮箱（包含@符号的列）
-                        for (let i = 4; i < columns.length; i++) {
-                            if (columns[i] && columns[i].includes('@')) {
-                                email = columns[i];
-                                // 用户ID通常在邮箱的下一列
-                                if (i + 1 < columns.length && columns[i + 1] && !columns[i + 1].includes('@') && !columns[i + 1].includes('[')) {
-                                    userId = columns[i + 1];
-                                }
-                                break;
-                            }
-                        }
-                        
-                        // 如果没找到邮箱，尝试从列8开始查找
-                        if (!email && columns.length > 8) {
-                            email = columns[8] || '';
-                            userId = columns[9] || '';
-                        }
-                        
-                        // 查找用户ID（如果还没找到，查找包含ins的列）
-                        if (!userId) {
-                            for (let i = 0; i < columns.length; i++) {
-                                if (columns[i] && columns[i].includes('ins') && !columns[i].includes('@') && !columns[i].includes('[')) {
-                                    userId = columns[i];
-                                    break;
-                                }
-                            }
-                        }
-                        
-                        // 默认邮箱URL
-                        emailUrl = 'https://mail.hebmails.com/';
-                    }
-                    
-                    // 构建输出格式
-                    let newFormat = [
-                        username,
-                        password,
-                        twofa,
-                        email,
-                        userId,
-                        country,
-                        emailUrl || 'https://mail.hebmails.com/',
-                        'https://2fa.plus/'
-                    ].join('----');
-                    
-                    if (username) {
-                        results.push(newFormat);
-                    }
-                });
-            } else {
-                // 手机格式：换行分隔的多行数据，按序号（数字开头）分割记录
-                // 先按空行尝试分割，如果分割后只有1个记录，则按序号分割
-                let records = input.split(/\n\s*\n/).filter(r => r.trim());
-                
-                // 如果按空行分割只有1个记录，说明记录之间没有空行，需要按序号分割
-                if (records.length === 1) {
-                    // 按序号（数字+Tab+非数字内容）分割记录
-                    let allLines = input.split('\n');
-                    records = [];
-                    let currentRecord = [];
-                    
-                    for (let i = 0; i < allLines.length; i++) {
-                        let line = allLines[i];
-                        let trimmed = line.trim();
-                        
-                        // 判断是否是序号行：数字+Tab，后面跟非数字内容（如用户名）
-                        // 排除数字行（如：0	0	0	）
-                        let isSequenceLine = false;
-                        if (trimmed.match(/^\d+\t/)) {
-                            let parts = trimmed.split('\t').filter(p => p.trim());
-                            // 如果第二部分不是纯数字，说明是序号行（如：1	用户名）
-                            if (parts.length > 1 && !parts[1].match(/^\d+$/)) {
-                                isSequenceLine = true;
-                            }
-                        }
-                        
-                        // 如果是序号行，且当前记录不为空，则开始新记录
-                        if (isSequenceLine && currentRecord.length > 0) {
-                            records.push(currentRecord.join('\n'));
-                            currentRecord = [line];
-                        } else {
-                            currentRecord.push(line);
-                        }
-                    }
-                    // 添加最后一个记录
-                    if (currentRecord.length > 0) {
-                        records.push(currentRecord.join('\n'));
-                    }
-                    
-                    // 过滤掉空记录
-                    records = records.filter(r => r.trim());
-                }
-                
-                records.forEach(record => {
-                    let rawLines = record.split('\n');
-                    let lines = [];
-                    let username = '';
-                    let password = '';
-                    let twofa = '';
-                    let email = '';
-                    let userId = '';
-                    
-                    // 处理第一行：包含序号、用户名、密码（Tab分隔）
-                    if (rawLines.length > 0) {
-                        let firstLine = rawLines[0].trim();
-                        if (firstLine.includes('\t')) {
-                            let cols = firstLine.split('\t').map(c => c.trim()).filter(c => c);
-                            // 第0列：序号（忽略）
-                            // 第1列：用户名
-                            // 第2列：密码
-                            if (cols.length > 1) username = cols[1] || '';
-                            if (cols.length > 2) password = cols[2] || '';
-                        }
-                    }
-                    
-                    // 处理后续行，直接从原始行中提取
-                    for (let i = 1; i < rawLines.length; i++) {
-                        let line = rawLines[i].trim();
-                        if (!line) continue;
-                        
-                        // 跳过数字行（如：0	0	0	）
-                        if (line.match(/^\d+\t\d+\t\d+/)) {
-                            continue;
-                        }
-                        
-                        // 如果包含Tab，只取第一列（去除Tab分隔的多列）
-                        if (line.includes('\t')) {
-                            let firstCol = line.split('\t')[0].trim();
-                            if (firstCol && !firstCol.match(/^\d+$/)) { // 忽略纯数字
-                                lines.push(firstCol);
-                            }
-                        } else {
-                            lines.push(line);
-                        }
-                    }
-                    
-                    // 提取2FA（通常是第一个非空行，且不包含@和[，长度较长）
-                    for (let i = 0; i < lines.length; i++) {
-                        if (lines[i] && 
-                            !lines[i].includes('@') && 
-                            !lines[i].includes('[') && 
-                            !lines[i].includes('{') &&
-                            !lines[i].includes('ins') &&
-                            lines[i].length > 10) { // 2FA通常较长
-                            twofa = lines[i];
-                            break;
-                        }
-                    }
-                    
-                    // 查找邮箱（包含@符号的行）
-                    for (let i = 0; i < lines.length; i++) {
-                        if (lines[i] && lines[i].includes('@')) {
-                            email = lines[i];
-                            // 用户ID通常在邮箱的下一行
-                            if (i + 1 < lines.length && lines[i + 1] && !lines[i + 1].includes('@') && !lines[i + 1].includes('[') && !lines[i + 1].includes('{')) {
-                                userId = lines[i + 1];
-                            }
-                            break;
-                        }
-                    }
-                    
-                    // 查找用户ID（如果还没找到，查找包含ins但不包含@的行）
-                    if (!userId) {
-                        for (let i = 0; i < lines.length; i++) {
-                            if (lines[i] && lines[i].includes('ins') && !lines[i].includes('@') && !lines[i].includes('[') && !lines[i].includes('{')) {
-                                userId = lines[i];
-                                break;
-                            }
-                        }
-                    }
-                    
-                    // 构建输出格式
-                    let newFormat = [
-                        username,
-                        password,
-                        twofa,
-                        email,
-                        userId,
-                        'https://mail.hebmails.com/',
-                        'https://2fa.plus/'
-                    ].join('----');
-                    
-                    if (username) {
-                        results.push(newFormat);
-                    }
-                });
-            }
-            
-            if (results.length === 0) {
-                document.getElementById('output2').innerText = '格式不正确或没有有效数据';
-                document.getElementById('stats2').innerHTML = '';
-                return;
-            }
-            
-            // 每行之间空一行（两个换行符），最后空一行并显示数量
-            let outputText = results.join('\n\n') + '\n\n数量：' + results.length + '个';
-            document.getElementById('output2').innerText = outputText;
-            animateOutput('output2');
-            
-            // 显示统计信息
-            let statsHtml = '<span class="stats-title">数量: ' + results.length + '个</span>';
-            document.getElementById('stats2').innerHTML = statsHtml;
-        }
 
-        function copyResult2() {
-            let text = document.getElementById('output2').innerText.trim();
-            if (!text || text === '请输入内容' || text.includes('格式不正确')) {
-                return;
-            }
-            
-            let temp = document.createElement('textarea');
-            temp.value = text;
-            temp.style.position = 'fixed';
-            temp.style.opacity = '0';
-            document.body.appendChild(temp);
-            temp.select();
-            
-            try {
-                document.execCommand('copy');
-            } catch (err) {
-                // 静默失败
-            }
-            
-            document.body.removeChild(temp);
-        }
-        
-        // 功能3：Tab转分隔符转换器
         function convertTabToSeparator() {
-            let input = document.getElementById('input3').value.trim();
+            const input = document.getElementById('input3').value.trim();
             if (!input) {
                 document.getElementById('output3').innerText = '请输入内容';
                 return;
             }
-            
-            let lines = input.split('\n');
-            let results = [];
-            
-            lines.forEach(line => {
+
+            const urlRadio = document.querySelector('input[name="tabUrlSuffix"]:checked');
+            const suffix = urlRadio ? urlRadio.value : 'https://17cce.com/';
+
+            const results = [];
+            input.split('\n').forEach(line => {
                 if (line.trim() === '') return;
-                // 将Tab替换为----
-                let converted = line.replace(/\t/g, '----');
-                results.push(converted);
+                const converted = line.replace(/\t/g, '----');
+                results.push(converted + '----' + suffix);
             });
-            
+
             if (results.length === 0) {
                 document.getElementById('output3').innerText = '格式不正确或没有有效数据';
                 return;
             }
-            
-            // 每行之间空一行（两个换行符），最后空一行并显示数量
-            let outputText = results.join('\n\n') + '\n\n数量：' + results.length + '个';
-            document.getElementById('output3').innerText = outputText;
-            animateOutput('output3');
-        }
 
-        function copyResult3() {
-            let text = document.getElementById('output3').innerText.trim();
-            if (!text || text === '请输入内容') {
-                return;
-            }
-            
-            let temp = document.createElement('textarea');
-            temp.value = text;
-            temp.style.position = 'fixed';
-            temp.style.opacity = '0';
-            document.body.appendChild(temp);
-            temp.select();
-            
-            try {
-                document.execCommand('copy');
-            } catch (err) {
-                // 静默失败
-            }
-            
-            document.body.removeChild(temp);
+            document.getElementById('output3').innerText =
+                results.join('\n\n') + '\n\n数量：' + results.length + '个';
         }
-        
-
-        
-        // 文件拖拽功能
-        (function() {
-            const dropZone = document.getElementById('dropZone');
-            const input2 = document.getElementById('input2');
-            
-            // 拖拽区域样式
-            function setDropZoneStyle(isDragging) {
-                if (isDragging) {
-                    dropZone.style.borderColor = 'rgba(79, 172, 254, 0.6)';
-                    dropZone.style.background = 'rgba(79, 172, 254, 0.1)';
-                    dropZone.style.transform = 'scale(1.02)';
-                } else {
-                    dropZone.style.borderColor = 'rgba(79, 172, 254, 0.3)';
-                    dropZone.style.background = 'rgba(79, 172, 254, 0.05)';
-                    dropZone.style.transform = 'scale(1)';
-                }
-            }
-            
-            // 阻止默认行为
-            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                dropZone.addEventListener(eventName, preventDefaults, false);
-                document.body.addEventListener(eventName, preventDefaults, false);
-            });
-            
-            function preventDefaults(e) {
-                e.preventDefault();
-                e.stopPropagation();
-            }
-            
-            // 拖拽进入
-            ['dragenter', 'dragover'].forEach(eventName => {
-                dropZone.addEventListener(eventName, () => setDropZoneStyle(true), false);
-            });
-            
-            // 拖拽离开
-            ['dragleave', 'drop'].forEach(eventName => {
-                dropZone.addEventListener(eventName, () => setDropZoneStyle(false), false);
-            });
-            
-            // 文件拖放
-            dropZone.addEventListener('drop', handleDrop, false);
-            
-            function handleDrop(e) {
-                const dt = e.dataTransfer;
-                const files = dt.files;
-                
-                if (files.length > 0) {
-                    handleFile(files[0]);
-                }
-            }
-            
-            // 处理文件
-            function handleFile(file) {
-                const fileName = file.name.toLowerCase();
-                const fileExtension = fileName.split('.').pop();
-                
-                if (fileExtension === 'txt') {
-                    // 读取TXT文件
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        try {
-                            const content = e.target.result;
-                            // 清空原有内容，替换为新内容
-                            input2.value = content;
-                            // 自动触发转换
-                            convertFormat();
-                        } catch (err) {
-                            alert('文件读取失败');
-                        }
-                    };
-                    reader.onerror = function() {
-                        alert('文件读取失败');
-                    };
-                    reader.readAsText(file, 'UTF-8');
-                } else if (fileExtension === 'xlsx' || fileExtension === 'xls') {
-                    // 读取Excel文件
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        try {
-                            const data = new Uint8Array(e.target.result);
-                            const workbook = XLSX.read(data, {type: 'array'});
-                            
-                            // 读取第一个工作表
-                            const firstSheetName = workbook.SheetNames[0];
-                            const worksheet = workbook.Sheets[firstSheetName];
-                            
-                            // 转换为JSON，然后转换为Tab分隔的文本格式
-                            const jsonData = XLSX.utils.sheet_to_json(worksheet, {header: 1, defval: ''});
-                            
-                            // 转换为Tab分隔的文本（模拟Excel复制粘贴的格式）
-                            // 跳过第一行（表头）
-                            let textContent = '';
-                            for (let i = 1; i < jsonData.length; i++) {
-                                const row = jsonData[i];
-                                if (row && row.length > 0) {
-                                    textContent += row.join('\t') + '\n';
-                                }
-                            }
-                            
-                            // 清空原有内容，替换为新内容
-                            input2.value = textContent.trim();
-                            // 自动触发转换
-                            convertFormat();
-                        } catch (err) {
-                            alert('文件格式错误');
-                        }
-                    };
-                    reader.onerror = function() {
-                        alert('文件读取失败');
-                    };
-                    reader.readAsArrayBuffer(file);
-                } else {
-                    alert('文件格式错误');
-                }
-            }
-        })();
     </script>
 </body>
 </html>
