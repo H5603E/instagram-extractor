@@ -518,12 +518,17 @@
         </div>
 
         <h2>Tab转分隔符转换器</h2>
-        <p class="intro">将制表符(Tab)分隔的数据转换为----分隔格式，并在每行末尾追加所选网址</p>
+        <p class="intro">将制表符(Tab)分隔的数据转换为----分隔格式；可选在每行末尾追加网址</p>
         <textarea id="input3" placeholder="粘贴Tab分隔的数据...&#10;例：&#10;do__ant	PY8Z0rRj5u	JMQMKCADEIPF7QITYCMQMUDWHTZSKHIB	gd4dfwowh0zg@vnvmail.com	韩国"></textarea>
         <div class="delimiter-row" title="转换后每行末尾追加的网址">
             <span class="delimiter-label">追加网址</span>
+            <label class="delimiter-option"><input type="radio" name="tabUrlSuffix" value="" id="tabUrlNone"> 无</label>
             <label class="delimiter-option"><input type="radio" name="tabUrlSuffix" value="https://17cce.com/" checked> https://17cce.com/</label>
             <label class="delimiter-option"><input type="radio" name="tabUrlSuffix" value="https://2fa.plus/"> https://2fa.plus/</label>
+            <label class="delimiter-option"><input type="radio" name="tabUrlSuffix" value="custom" id="tabUrlRadioCustom"> 自定义</label>
+            <input type="text" id="tabUrlCustom" class="delimiter-custom-input" maxlength="200" placeholder="输入网址" autocomplete="off" aria-label="自定义追加网址"
+                onfocus="document.getElementById('tabUrlRadioCustom').checked=true"
+                oninput="document.getElementById('tabUrlRadioCustom').checked=true">
         </div>
         <div class="button-group">
             <button type="button" onclick="convertTabToSeparator()">Tab转----</button>
@@ -567,8 +572,15 @@
             const layer = document.getElementById('danmakuLayer');
             let idx = 0;
             const tracks = 8;
+            let timer = null;
+
+            function clearAll() {
+                layer.innerHTML = '';
+            }
 
             function spawn() {
+                if (document.hidden) return;
+
                 const text = DANMAKU_TEXTS[idx % DANMAKU_TEXTS.length];
                 idx++;
                 const el = document.createElement('div');
@@ -578,12 +590,10 @@
                 const track = Math.floor(Math.random() * tracks);
                 const top = 8 + track * ((window.innerHeight - 80) / tracks);
                 const duration = 10 + Math.random() * 8;
-                const delay = Math.random() * 0.4;
 
                 el.style.top = top + 'px';
                 el.style.left = '100vw';
                 el.style.animationDuration = duration + 's';
-                el.style.animationDelay = delay + 's';
                 el.style.fontSize = (14 + Math.random() * 4) + 'px';
                 el.style.opacity = String(0.75 + Math.random() * 0.25);
 
@@ -591,8 +601,34 @@
                 el.addEventListener('animationend', () => el.remove());
             }
 
-            spawn();
-            setInterval(spawn, 1400);
+            function scheduleNext() {
+                clearTimeout(timer);
+                timer = null;
+                if (document.hidden) return;
+                timer = setTimeout(() => {
+                    spawn();
+                    scheduleNext();
+                }, 1400);
+            }
+
+            function start() {
+                clearAll();
+                spawn();
+                scheduleNext();
+            }
+
+            function stop() {
+                clearTimeout(timer);
+                timer = null;
+                clearAll();
+            }
+
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) stop();
+                else start();
+            });
+
+            start();
         })();
 
         function toast(msg) {
@@ -726,6 +762,15 @@
             document.getElementById('stats1').innerHTML = statsHtml;
         }
 
+        function getTabUrlSuffix() {
+            const radio = document.querySelector('input[name="tabUrlSuffix"]:checked');
+            if (!radio) return '';
+            if (radio.value === 'custom') {
+                return document.getElementById('tabUrlCustom').value.trim();
+            }
+            return radio.value;
+        }
+
         function convertTabToSeparator() {
             const input = document.getElementById('input3').value.trim();
             if (!input) {
@@ -733,14 +778,13 @@
                 return;
             }
 
-            const urlRadio = document.querySelector('input[name="tabUrlSuffix"]:checked');
-            const suffix = urlRadio ? urlRadio.value : 'https://17cce.com/';
+            const suffix = getTabUrlSuffix();
 
             const results = [];
             input.split('\n').forEach(line => {
                 if (line.trim() === '') return;
                 const converted = line.replace(/\t/g, '----');
-                results.push(converted + '----' + suffix);
+                results.push(suffix ? converted + '----' + suffix : converted);
             });
 
             if (results.length === 0) {
